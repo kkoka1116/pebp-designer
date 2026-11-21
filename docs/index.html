@@ -1,0 +1,564 @@
+<meta charset="utf-8">
+<title>PEBP Designer</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="Open research software that turns an infant's maxillary scan into a pre-epiglottic baton plate design, try-in prototypes and casting tooling. Not a medical device.">
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a lit specimen stage up top, then a bench notebook: each section pairs one live model or drawing with plain notes. Accent = cast PMMA pink, the material the worn plate is made of. */
+:root {
+  --bg:#eef2f5; --sheet:#ffffff; --stage:#dfe6ec; --ink:#14202b; --muted:#566573; --rule:#cfd8e0;
+  --acrylic:#d9475f; --acrylic-soft:#f6d9de; --cool:#2d7f8c; --scan:#9aa7b4;
+  --p1:#4a7bd0; --p2:#d9475f; --p3:#d39a2a;
+  --pub:#1f7a4d; --pub-bg:#dcf1e5; --heu:#8a5a00; --heu-bg:#fbefd2; --inf:#5b4bb5; --inf-bg:#e8e4fa;
+  --warn-bg:#fff3d6; --warn-ink:#5c3f00;
+  --display:"Bricolage Grotesque","Avenir Next","Segoe UI",sans-serif;
+  --body:"Instrument Sans","Helvetica Neue",Arial,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg:#0c141b; --sheet:#121d26; --stage:#0f1a22; --ink:#e3eaf0; --muted:#9aabb8; --rule:#24333f;
+  --acrylic:#ff6b81; --acrylic-soft:#3a1d25; --cool:#5cc2cf; --scan:#6f7f8d;
+  --p1:#7ea5f0; --p2:#ff6b81; --p3:#f0bb55;
+  --pub:#6fd6a0; --pub-bg:#123323; --heu:#f2c66d; --heu-bg:#33270c; --inf:#b2a6ff; --inf-bg:#221d42;
+  --warn-bg:#2e2410; --warn-ink:#f4d58e; color-scheme:dark; } }
+:root[data-theme="dark"] {
+  --bg:#0c141b; --sheet:#121d26; --stage:#0f1a22; --ink:#e3eaf0; --muted:#9aabb8; --rule:#24333f;
+  --acrylic:#ff6b81; --acrylic-soft:#3a1d25; --cool:#5cc2cf; --scan:#6f7f8d;
+  --p1:#7ea5f0; --p2:#ff6b81; --p3:#f0bb55;
+  --pub:#6fd6a0; --pub-bg:#123323; --heu:#f2c66d; --heu-bg:#33270c; --inf:#b2a6ff; --inf-bg:#221d42;
+  --warn-bg:#2e2410; --warn-ink:#f4d58e; color-scheme:dark; }
+
+* { box-sizing:border-box; }
+html { scroll-behavior:smooth; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior:auto; } }
+body { margin:0; background:var(--bg); color:var(--ink); font:400 1.03rem/1.6 var(--body); }
+.wrap { max-width:1180px; margin:0 auto; padding-left:max(16px,env(safe-area-inset-left,0px)); padding-right:max(16px,env(safe-area-inset-right,0px)); }
+h1,h2,h3 { font-family:var(--display); font-weight:700; line-height:1.06; margin:0; text-wrap:balance; letter-spacing:-.01em; }
+h1 { font-size:clamp(2.3rem,6vw,4.4rem); max-width:15ch; }
+h2 { font-size:clamp(1.7rem,3.4vw,2.5rem); }
+h3 { font-size:1.2rem; font-weight:500; }
+p { margin:0; }
+a { color:var(--cool); text-underline-offset:3px; }
+:focus-visible { outline:2px solid var(--acrylic); outline-offset:2px; }
+code, .mono { font-family:var(--mono); font-size:.88em; }
+.eyebrow { font:500 .78rem/1.3 var(--mono); letter-spacing:.09em; text-transform:uppercase; color:var(--muted); }
+.prose { max-width:64ch; display:grid; gap:.8em; }
+p.prose { display:block; }
+
+/* claim labels */
+.tag { display:inline-block; font:500 .7rem/1 var(--mono); letter-spacing:.04em; padding:4px 6px; border-radius:3px; vertical-align:.12em; white-space:nowrap; }
+.tag.pub { background:var(--pub-bg); color:var(--pub); }
+.tag.heu { background:var(--heu-bg); color:var(--heu); }
+.tag.inf { background:var(--inf-bg); color:var(--inf); }
+
+/* hero */
+.hero { position:relative; background:var(--stage); border-bottom:1px solid var(--rule); overflow:hidden; }
+.hero .wrap { position:relative; display:grid; grid-template-columns:minmax(0,5fr) minmax(0,6fr); gap:24px; align-items:center; padding-block:40px 28px; min-height:560px; }
+.hero-copy { display:grid; gap:18px; position:relative; z-index:2; }
+.hero-copy .lede { font-size:1.15rem; max-width:44ch; color:var(--muted); }
+.hero-copy .lede b { color:var(--ink); font-weight:600; }
+.stage { position:relative; height:520px; min-width:0; }
+.stage canvas, .viewer canvas { position:absolute; inset:0; width:100%; height:100%; display:block; touch-action:none; cursor:grab; }
+.chips { display:flex; flex-wrap:wrap; gap:6px; }
+.chip { font:500 .85rem/1 var(--body); border:1px solid var(--rule); background:var(--sheet); color:var(--ink); padding:9px 12px; border-radius:999px; cursor:pointer; display:inline-flex; gap:7px; align-items:center; }
+.chip i { width:10px; height:10px; border-radius:50%; display:inline-block; }
+.chip[aria-pressed="true"] { border-color:var(--ink); box-shadow:inset 0 0 0 1px var(--ink); }
+.stage-note { position:absolute; left:8px; bottom:8px; font:400 .75rem/1.3 var(--mono); color:var(--muted); background:color-mix(in srgb,var(--stage) 85%,transparent); padding:4px 6px; }
+.ctas { display:flex; flex-wrap:wrap; gap:10px; }
+.btn { font:600 .98rem/1 var(--body); padding:13px 18px; border-radius:6px; text-decoration:none; border:1px solid var(--ink); color:var(--ink); background:transparent; display:inline-flex; gap:8px; align-items:center; cursor:pointer; }
+.btn.solid { background:var(--acrylic); border-color:var(--acrylic); color:#fff; }
+.btn:hover { filter:brightness(1.06); }
+
+.status { background:var(--warn-bg); color:var(--warn-ink); }
+.status .wrap { padding-block:14px; display:flex; gap:10px 18px; flex-wrap:wrap; align-items:baseline; font-size:.98rem; }
+.status strong { font-family:var(--display); font-size:1.05rem; }
+
+main { display:grid; gap:clamp(56px,8vw,96px); padding-block:56px 72px; }
+section { display:grid; gap:22px; scroll-margin-top:16px; min-width:0; }
+.head { display:grid; gap:10px; }
+.split { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.35fr); gap:32px; align-items:start; }
+.split.flip { grid-template-columns:minmax(0,1.35fr) minmax(0,1fr); }
+
+/* pipeline */
+.steps { list-style:none; margin:0; padding:0; display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:1px; background:var(--rule); border:1px solid var(--rule); counter-reset:s; }
+.steps li { background:var(--sheet); padding:18px 18px 20px; display:grid; gap:8px; align-content:start; counter-increment:s; }
+.steps li::before { content:counter(s,decimal-leading-zero); font:500 .8rem/1 var(--mono); color:var(--acrylic); }
+.steps h3 { font-weight:700; }
+.steps p { color:var(--muted); font-size:.95rem; }
+
+/* figures */
+.fig { background:var(--sheet); border:1px solid var(--rule); min-width:0; }
+.fig figcaption { padding:12px 14px; border-top:1px solid var(--rule); font-size:.88rem; color:var(--muted); }
+.fig svg { display:block; width:100%; height:auto; }
+.viewer { position:relative; height:440px; background:var(--stage); }
+.legend { display:flex; flex-wrap:wrap; gap:6px 16px; font:400 .82rem/1.3 var(--mono); color:var(--muted); padding:10px 14px; border-top:1px solid var(--rule); }
+.legend span { display:inline-flex; gap:6px; align-items:center; }
+.legend i { width:14px; height:3px; display:inline-block; }
+
+/* kit grid */
+.kit-ui { display:grid; gap:14px; }
+.kitgrid { display:grid; grid-template-columns:auto repeat(5,minmax(0,1fr)); gap:4px; font:500 .8rem/1 var(--mono); align-items:center; }
+.kitgrid .ax { color:var(--muted); text-align:center; padding:4px; }
+.kitgrid .ax.row { text-align:right; padding-right:8px; white-space:nowrap; }
+.kitgrid button { font:500 .82rem/1 var(--mono); border:1px solid var(--rule); background:var(--sheet); color:var(--ink); padding:12px 0; border-radius:4px; cursor:pointer; }
+.kitgrid button[aria-pressed="true"] { background:var(--acrylic); border-color:var(--acrylic); color:#fff; }
+.readout { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:1px; background:var(--rule); border:1px solid var(--rule); }
+.readout div { background:var(--sheet); padding:10px 12px; display:grid; gap:3px; }
+.readout b { font:500 .7rem/1.2 var(--mono); letter-spacing:.06em; text-transform:uppercase; color:var(--muted); }
+.readout span { font:500 1.05rem/1.2 var(--mono); font-variant-numeric:tabular-nums; }
+
+/* mold */
+.slider { display:grid; grid-template-columns:auto minmax(0,1fr) auto; gap:12px; align-items:center; padding:12px 14px; border-top:1px solid var(--rule); font:500 .85rem/1 var(--mono); color:var(--muted); }
+.slider input { width:100%; accent-color:var(--acrylic); }
+
+/* studio */
+.shot { border:1px solid var(--rule); background:var(--sheet); overflow:hidden; border-radius:8px; box-shadow:0 18px 40px -24px rgba(10,20,30,.45); }
+.shot .bar { display:flex; gap:6px; padding:9px 12px; border-bottom:1px solid var(--rule); }
+.shot .bar i { width:10px; height:10px; border-radius:50%; background:var(--rule); }
+.shot img { display:block; width:100%; height:auto; }
+ul.ticks { list-style:none; padding:0; margin:0; display:grid; gap:10px; }
+ul.ticks li { padding-left:22px; position:relative; }
+ul.ticks li::before { content:""; position:absolute; left:2px; top:.62em; width:9px; height:2px; background:var(--acrylic); }
+
+/* rules table */
+.tablewrap { overflow-x:auto; border:1px solid var(--rule); background:var(--sheet); }
+table { border-collapse:collapse; width:100%; min-width:620px; font-size:.95rem; }
+th, td { text-align:left; padding:11px 14px; border-bottom:1px solid var(--rule); vertical-align:top; }
+th { font:500 .74rem/1.2 var(--mono); letter-spacing:.06em; text-transform:uppercase; color:var(--muted); }
+td.num { font-family:var(--mono); font-variant-numeric:tabular-nums; white-space:nowrap; }
+tr:last-child td { border-bottom:0; }
+
+/* state */
+.state { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; }
+.state > div { background:var(--sheet); border:1px solid var(--rule); padding:18px; display:grid; gap:12px; align-content:start; }
+.state h3 { font-weight:700; }
+.done li::before { background:var(--pub); }
+.notyet li::before { background:var(--heu); }
+
+/* download */
+.dl { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:16px; }
+.dl > div { background:var(--sheet); border:1px solid var(--rule); padding:20px; display:grid; gap:12px; align-content:start; min-width:0; }
+.dl h3 { font-weight:700; font-size:1.25rem; }
+.dl p { color:var(--muted); font-size:.95rem; }
+pre { margin:0; background:var(--stage); border:1px solid var(--rule); padding:12px; overflow-x:auto; font:400 .8rem/1.55 var(--mono); }
+.pending { font:500 .78rem/1.4 var(--mono); color:var(--warn-ink); background:var(--warn-bg); padding:8px 10px; }
+
+.sources ol { margin:0; padding-left:1.3em; display:grid; gap:8px; font-size:.92rem; color:var(--muted); max-width:90ch; }
+footer { border-top:1px solid var(--rule); }
+footer .wrap { padding-block:24px 36px; font-size:.88rem; color:var(--muted); display:grid; gap:6px; }
+
+@media (max-width:900px) {
+  .hero .wrap, .split, .split.flip { grid-template-columns:minmax(0,1fr); }
+  .hero .wrap { min-height:0; }
+  .stage { height:380px; }
+  .steps, .dl { grid-template-columns:minmax(0,1fr); }
+  .state { grid-template-columns:minmax(0,1fr); }
+  .viewer { height:360px; }
+}
+@media (min-width:601px) and (max-width:900px) { .steps { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+</style>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="hero-copy">
+      <p class="eyebrow">Research software · pre-epiglottic baton plate</p>
+      <h1>From an infant's palate scan to a fitted baton plate</h1>
+      <p class="lede">PEBP Designer reads an intraoral scan of the upper jaw and builds the <b>Tübingen palatal plate</b>: a palatal plate whose curved extension rests on the tongue base to hold the airway open in infants with Robin sequence. It makes the try-in prototypes, records every endoscopy change, and generates printed tooling to cast the final plate.</p>
+      <div class="chips" id="heroChips" role="group" aria-label="Layers in the 3D model"></div>
+      <div class="ctas">
+        <a class="btn solid" href="#download">Get the app</a>
+        <a class="btn" href="#how">How it works</a>
+      </div>
+    </div>
+    <div class="stage" id="heroStage">
+      <canvas id="heroCanvas" aria-label="Rotating 3D model of a synthetic infant palate with the designed plate and baton"></canvas>
+      <span class="stage-note">synthetic Robin-sequence palate · drag to turn · grid 10 mm</span>
+    </div>
+  </div>
+</header>
+
+<div class="status" role="note">
+  <div class="wrap">
+    <strong>Not a medical device.</strong>
+    <span>Nothing designed here has been printed, cast, bench-tested or clinically validated. Every model on this page comes from a synthetic palate built from published averages. No patient data is used or shown.</span>
+  </div>
+</div>
+
+<main class="wrap">
+
+<section id="how" aria-labelledby="how-h">
+  <div class="head">
+    <p class="eyebrow">The pipeline</p>
+    <h2 id="how-h">One command per step, one record per patient</h2>
+    <p class="prose">Each step writes files and adds to a single design record (<code>design.json</code>), so every endoscopy try-in and sleep study is logged against the exact device that was in the mouth.</p>
+  </div>
+  <ol class="steps">
+    <li><h3>Orient the scan</h3><p>Finds the arch, tuberosities and incisive papilla, then puts the scan in a fixed frame: occlusal plane at z = 0, origin midway between the tuberosities, millimetres.</p></li>
+    <li><h3>Block out the cleft</h3><p>Measures the cleft band by band and bridges it, so the plate rests on the shelves rather than in the gap. The clinician enters the cleft type from the exam; the scan never decides it.</p></li>
+    <li><h3>Build plate and prototypes</h3><p>A 2 mm plate with the published Tübingen extension attached, written as three prototypes P1–P3 with the baton 2 mm back, centred and 2 mm forward.</p></li>
+    <li><h3>Log the try-in</h3><p>A structured endoscopy form records what was changed (shorten, tilt, narrow). Each change becomes a new device A1, A2… by deforming the published baton along its skeleton.</p></li>
+    <li><h3>Check every design</h3><p>QC against the published thickness and width rules, plus a reach check against infant airway norms. Failures are marked STOP and need a named person to override.</p></li>
+    <li><h3>Make the tooling</h3><p>A four-piece printed mold, a cradle and a wire-bending jig to cast the final plate in cold-cure PMMA with its safety wire, plus a demold simulation.</p></li>
+  </ol>
+</section>
+
+<section aria-labelledby="sag-h">
+  <div class="split">
+    <div class="head">
+      <p class="eyebrow">Prototypes P1–P3</p>
+      <h2 id="sag-h">Three tries, two millimetres apart</h2>
+      <div class="prose">
+        <p>In Tübingen the first fitting uses a set of plates whose extensions differ in position, and the one that sits best under the endoscope is kept <span class="tag pub">published · Aretxabaleta 2025</span>. The software writes that set as P1–P3, shifting the whole baton 2 mm back and forward <span class="tag heu">project heuristic</span>.</p>
+        <p>The drawing is a true section through the generated models at the midline. Anterior is to the left. The extension is 3.5 mm thick here, above the published 3 mm minimum <span class="tag pub">published</span>.</p>
+      </div>
+    </div>
+    <figure class="fig" style="margin:0">
+      <svg id="sagittal" viewBox="0 0 640 420" role="img" aria-label="Midline section of prototypes P1, P2 and P3 with tips 2 mm apart"></svg>
+      <div class="legend">
+        <span><i style="background:var(--p1)"></i>P1 · 2 mm back</span>
+        <span><i style="background:var(--p2)"></i>P2 · centred</span>
+        <span><i style="background:var(--p3)"></i>P3 · 2 mm forward</span>
+        <span><i style="background:var(--scan)"></i>palate, 7 mm off midline</span>
+      </div>
+    </figure>
+  </div>
+</section>
+
+<section aria-labelledby="kit-h">
+  <div class="split flip">
+    <figure class="fig" style="margin:0">
+      <div class="viewer"><canvas id="kitCanvas" aria-label="3D view of the socket base with the selected kit baton"></canvas></div>
+      <div class="legend"><span><i style="background:var(--scan)"></i>socket base</span><span><i style="background:var(--acrylic)"></i>selected stock baton</span><span><i style="background:var(--cool)"></i>tip of every baton in the kit</span></div>
+    </figure>
+    <div class="kit-ui">
+      <div class="head">
+        <p class="eyebrow">Modular try-in kit</p>
+        <h2 id="kit-h">Fifteen batons, one socket</h2>
+        <p class="prose">An alternative, untested route: one try-in base with a socket, and fifteen slide-in batons that vary length and angle. Pick one to see it seated. <span class="tag heu">project heuristic · untested</span></p>
+      </div>
+      <div class="kitgrid" id="kitGrid" role="group" aria-label="Kit batons by length and angle"></div>
+      <div class="readout">
+        <div><b>Baton</b><span id="kId">K8</span></div>
+        <div><b>Length change</b><span id="kL">+2 mm</span></div>
+        <div><b>Angle change</b><span id="kA">0°</span></div>
+      </div>
+      <p class="prose" style="font-size:.92rem;color:var(--muted)">Across the kit the tip moves <span id="envY" class="mono">5.5</span> mm front to back and <span id="envZ" class="mono">11.5</span> mm up and down, against 4 mm for P1–P3. Kit batons are for supervised try-in only and are never worn.</p>
+    </div>
+  </div>
+</section>
+
+<section aria-labelledby="mold-h">
+  <div class="split">
+    <div class="head">
+      <p class="eyebrow">Casting the final plate</p>
+      <h2 id="mold-h">Printed tooling, cast acrylic</h2>
+      <div class="prose">
+        <p>The worn plate stays cold-cure PMMA with a cast-in safety wire, as in Tübingen <span class="tag pub">published</span>. The printer only makes tooling: a working model, an oral counter that lifts straight up, and two extension halves that part sideways around the baton.</p>
+        <p>The wire runs from about 1 cm after the root to 1.5–2 mm before the tip <span class="tag pub">published</span>. In this case it is 27.7 mm long and stops 2.0 mm short of the tip. Drag the slider to take the mold apart in order.</p>
+        <p><a href="https://kkoka1116.github.io/pebp-mold-workflow/">The full mold workflow, step by step</a></p>
+      </div>
+    </div>
+    <figure class="fig" style="margin:0">
+      <div class="viewer"><canvas id="moldCanvas" aria-label="3D view of the four-piece mold with the cast plate inside"></canvas></div>
+      <div class="slider"><label for="demold">Assembled</label><input id="demold" type="range" min="0" max="100" value="38"><span>Open</span></div>
+      <div class="legend" id="moldLegend"></div>
+    </figure>
+  </div>
+</section>
+
+<section aria-labelledby="app-h">
+  <div class="head">
+    <p class="eyebrow">PEBP Studio</p>
+    <h2 id="app-h">The same pipeline as an app on your computer</h2>
+  </div>
+  <div class="split flip">
+    <div class="shot"><div class="bar"><i></i><i></i><i></i></div><img src="studio.webp" width="1800" height="1031" alt="PEBP Studio showing the Plate and prototypes step with prototype P2 on a synthetic scan" loading="lazy"></div>
+    <div class="prose">
+      <p>Studio walks a case through six steps: case, landmarks, plate and prototypes, baton changes, checks and mold. Each step is approved by a named person, and the approvals are stored with fingerprints of the files they cover.</p>
+      <ul class="ticks">
+        <li>Runs on the local computer only. The server answers this machine and nothing else, so scans never leave it.</li>
+        <li>Clinical choices, such as the cleft type, are marked as clinical and stored with who entered them.</li>
+        <li>STOP findings hold an approval until someone reads them and approves anyway, on the record.</li>
+        <li>On a Mac it installs as a desktop app with a starter folder of synthetic sample scans.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section aria-labelledby="rules-h">
+  <div class="head">
+    <p class="eyebrow">What the checks enforce</p>
+    <h2 id="rules-h">Rules, and where each one comes from</h2>
+  </div>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Rule</th><th>Value</th><th>Source</th></tr></thead>
+      <tbody>
+        <tr><td>Extension thickness</td><td class="num">≥ 3 mm</td><td><span class="tag pub">published</span> Aretxabaleta 2025</td></tr>
+        <tr><td>Narrowing of the extension</td><td class="num">never &gt; ½ width</td><td><span class="tag pub">published</span> Aretxabaleta 2025</td></tr>
+        <tr><td>Final plate thickness</td><td class="num">2.5–3 mm</td><td><span class="tag pub">published</span> Aretxabaleta 2025</td></tr>
+        <tr><td>Safety wire span</td><td class="num">~10 mm after root → 1.5–2 mm before tip</td><td><span class="tag pub">published</span> Aretxabaleta 2025</td></tr>
+        <tr><td>Prototype plate thickness</td><td class="num">2 mm</td><td><span class="tag heu">project heuristic</span></td></tr>
+        <tr><td>Prototype spacing</td><td class="num">2 mm steps</td><td><span class="tag heu">project heuristic</span></td></tr>
+        <tr><td>Reach compared with infant norms (tongue 56.8 mm tip to valleculae at birth)</td><td class="num">plausibility only</td><td><span class="tag pub">published</span> Vorperian 2005 · use here <span class="tag inf">inference</span></td></tr>
+        <tr><td>Tip target, sleep index and threshold</td><td class="num">per case</td><td>Clinical choice. Stored and flagged; the software never sets it.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section aria-labelledby="state-h">
+  <div class="head">
+    <p class="eyebrow">Where it stands</p>
+    <h2 id="state-h">Software complete for phase 0. Nothing physical yet.</h2>
+  </div>
+  <div class="state">
+    <div class="done"><h3>Built and tested in software</h3>
+      <ul class="ticks">
+        <li>Scan to plate, prototypes, QC and design record</li>
+        <li>Endoscopy fitting form and change log</li>
+        <li>Casting tooling and demold simulation</li>
+        <li>Modular kit and two-visit chairside route</li>
+        <li>PEBP Studio desktop app</li>
+        <li>30-check synthetic regression suite, all passing</li>
+      </ul>
+    </div>
+    <div class="notyet"><h3>Not done</h3>
+      <ul class="ticks">
+        <li>No part has been printed or cast</li>
+        <li>Bench tests (fit, release, wire pull-out, fracture) not started</li>
+        <li>No clinical evaluation or regulatory review</li>
+        <li>Imaging, endoscopy-video and sleep-study experiments still to come</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section id="download" aria-labelledby="dl-h">
+  <div class="head">
+    <p class="eyebrow">Download</p>
+    <h2 id="dl-h">Get PEBP Designer</h2>
+    <p class="prose">Free for noncommercial research and teaching (PolyForm Noncommercial 1.0.0). Python 3.12; runs on macOS, Linux and Windows. The desktop app installer is macOS only for now.</p>
+  </div>
+  <div class="dl">
+    <div>
+      <h3>PEBP Studio for Mac</h3>
+      <p>The six-step app in its own window, with sample synthetic scans and a walkthrough.</p>
+      <a class="btn solid" id="dlMac" href="https://github.com/kkoka1116/pebp-designer/archive/refs/heads/main.zip">Download PEBP Designer (.zip)</a>
+      <p>Unzip, install as under “Source”, then run:</p>
+      <pre>.venv/bin/pip install -r requirements-app.txt
+.venv/bin/python -m pebp app --install</pre>
+    </div>
+    <div>
+      <h3>Source and command line</h3>
+      <p>The <code>pebp</code> package, all commands, and the regression suite.</p>
+      <a class="btn" id="dlSrc" href="https://github.com/kkoka1116/pebp-designer">View the code on GitHub</a>
+<pre>cd pebp_demo
+python3.12 -m venv .venv
+.venv/bin/pip install -r requirements.txt
+.venv/bin/python -m pebp studio</pre>
+    </div>
+    <div>
+      <h3>Try it on a synthetic case</h3>
+      <p>No scan needed: make a synthetic palate, design it and open the viewer.</p>
+<pre>pebp synth  --out out/demo --preset prs
+pebp design out/demo/scan.stl --out out/demo
+pebp mold   out/demo
+pebp viewer out/demo</pre>
+    </div>
+  </div>
+</section>
+
+<section class="sources" aria-labelledby="src-h">
+  <div class="head"><p class="eyebrow">Sources</p><h2 id="src-h">References</h2></div>
+  <ol>
+    <li>Aretxabaleta M, et al. 2025. Bioengineering 12:1063. Standard extension STLs and technical drawing, CC BY 4.0; the published thickness, width, plate and wire rules.</li>
+    <li>Aretxabaleta M, et al. 2022. Bioengineering 9:773. doi:10.3390/bioengineering9120773. Measurement scheme for plate sections PS0–PS5, effective and sagittal length.</li>
+    <li>Vorperian HK, et al. 2005. J Acoust Soc Am 117:338. doi:10.1121/1.1835958. Vocal tract dimensions at birth.</li>
+    <li>Perez C, et al. 2020. Paediatr Anaesth. doi:10.1111/pan.13869. Tongue position in Robin sequence.</li>
+  </ol>
+</section>
+
+</main>
+
+<footer><div class="wrap">
+  <span>PEBP Designer · research and demonstration software · not a medical device · code under the PolyForm Noncommercial 1.0.0 licence.</span>
+  <span>All 3D models on this page are generated from a synthetic palate. The Tübingen standard extension is used under CC BY 4.0.</span>
+</div></footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+(function(){
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const b64 = s => Uint8Array.from(atob(s), c => c.charCodeAt(0)).buffer;
+
+function geom(e){
+  const q = new Uint16Array(b64(e.v)), n = q.length/3, pos = new Float32Array(q.length);
+  for (let i=0;i<n;i++) for (let k=0;k<3;k++) pos[i*3+k] = e.lo[k] + q[i*3+k]*e.sc[k];
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.BufferAttribute(pos,3));
+  g.setIndex(new THREE.BufferAttribute(e.i32 ? new Uint32Array(b64(e.f)) : new Uint16Array(b64(e.f)),1));
+  g.computeVertexNormals(); return g;
+}
+
+function makeScene(canvas, opts){
+  const r = new THREE.WebGLRenderer({canvas, antialias:true, alpha:true});
+  r.setPixelRatio(Math.min(devicePixelRatio,2));
+  const scene = new THREE.Scene();
+  const cam = new THREE.PerspectiveCamera(32,1,1,2000); cam.up.set(0,0,1);
+  scene.add(new THREE.HemisphereLight(0xffffff,0x445566,0.75));
+  const d1 = new THREE.DirectionalLight(0xffffff,0.75); d1.position.set(60,80,120); scene.add(d1);
+  const d2 = new THREE.DirectionalLight(0xffffff,0.35); d2.position.set(-80,-60,-40); scene.add(d2);
+  const ctl = new THREE.OrbitControls(cam, canvas); ctl.enableDamping = true; ctl.enablePan = false;
+  ctl.target.set(...opts.target); cam.position.set(...opts.cam);
+  ctl.autoRotate = !!opts.spin && !reduce; ctl.autoRotateSpeed = 0.9;
+  canvas.addEventListener('pointerdown',()=>{ctl.autoRotate=false;});
+  const grid = new THREE.GridHelper(120,12); grid.rotation.x = Math.PI/2; grid.position.z = opts.gridZ ?? -22;
+  grid.material.transparent = true; grid.material.opacity = 0.18; scene.add(grid);
+  const s = {r,scene,cam,ctl,grid,canvas,visible:true};
+  function size(){ const w = canvas.clientWidth, h = canvas.clientHeight; if(!w||!h) return; r.setSize(w,h,false); cam.aspect = w/h; cam.updateProjectionMatrix(); }
+  new ResizeObserver(size).observe(canvas); size();
+  new IntersectionObserver(es=>{ s.visible = es[0].isIntersecting; }).observe(canvas);
+  return s;
+}
+const scenes = [];
+function loop(){ requestAnimationFrame(loop); for (const s of scenes) if (s.visible){ s.ctl.update(); s.r.render(s.scene,s.cam); } }
+
+function mat(color, o){ return new THREE.MeshStandardMaterial(Object.assign({color:new THREE.Color(color), roughness:0.55, metalness:0.02}, o||{})); }
+function themeColors(){ return {scan:css('--scan'), acr:css('--acrylic'), cool:css('--cool'), ink:css('--ink'), p1:css('--p1'), p2:css('--p2'), p3:css('--p3')}; }
+
+/* hero */
+fetch('data/hero.json').then(r=>r.json()).then(d=>{
+  const c = themeColors();
+  const s = makeScene(document.getElementById('heroCanvas'), {target:[0,2,-4], cam:[-70,-95,55], spin:true, gridZ:-21});
+  scenes.push(s);
+  const meshes = {
+    scan: new THREE.Mesh(geom(d.scan), mat(c.scan,{transparent:true,opacity:0.42,side:THREE.DoubleSide,depthWrite:false})),
+    P1: new THREE.Mesh(geom(d.P1), mat(c.p1,{roughness:0.35})),
+    P2: new THREE.Mesh(geom(d.P2), mat(c.acr,{roughness:0.32})),
+    P3: new THREE.Mesh(geom(d.P3), mat(c.p3,{roughness:0.35})),
+    F:  new THREE.Mesh(geom(d.F),  mat(c.acr,{roughness:0.32}))
+  };
+  for (const k in meshes) s.scene.add(meshes[k]);
+  const layers = [
+    {k:'scan', label:'Scan', col:c.scan, on:true, solo:false},
+    {k:'P1', label:'P1', col:c.p1}, {k:'P2', label:'P2', col:c.acr, on:true}, {k:'P3', label:'P3', col:c.p3},
+    {k:'F', label:'Final, wire groove', col:c.acr}
+  ];
+  const box = document.getElementById('heroChips');
+  function apply(){ for (const L of layers) meshes[L.k].visible = !!L.on; for (const b of box.children) b.setAttribute('aria-pressed', layers[b.dataset.i].on ? 'true':'false'); }
+  layers.forEach((L,i)=>{
+    const b = document.createElement('button'); b.className='chip'; b.type='button'; b.dataset.i=i;
+    b.innerHTML = '<i style="background:'+L.col+'"></i>'+L.label;
+    b.addEventListener('click',()=>{
+      if (L.k==='scan') L.on = !L.on;
+      else { const was = L.on; layers.forEach(o=>{ if(o.k!=='scan') o.on=false; }); L.on = !was || true; }
+      apply();
+    });
+    box.appendChild(b);
+  });
+  apply(); if (scenes.length===1) loop();
+}).catch(()=>{});
+
+/* sagittal section */
+fetch('data/sections.json').then(r=>r.json()).then(d=>{
+  const svg = document.getElementById('sagittal'), NS='http://www.w3.org/2000/svg';
+  const Y0=30, Z0=12, k=10.2, ox=26, oy=40;  // y in [-25,30] -> x ; z in [-21,12]
+  const X = y => ox + (Y0 - y)*k, Yp = z => oy + (Z0 - z)*k;
+  const el = (t,a,txt)=>{ const e=document.createElementNS(NS,t); for(const n in a) e.setAttribute(n,a[n]); if(txt) e.textContent=txt; svg.appendChild(e); return e; };
+  // grid
+  for (let y=-20;y<=30;y+=10) el('line',{x1:X(y),x2:X(y),y1:Yp(12),y2:Yp(-21),stroke:'var(--rule)','stroke-width':1});
+  for (let z=-20;z<=10;z+=10) el('line',{x1:X(30),x2:X(-25),y1:Yp(z),y2:Yp(z),stroke:'var(--rule)','stroke-width':1});
+  el('line',{x1:X(30),x2:X(-25),y1:Yp(0),y2:Yp(0),stroke:'var(--muted)','stroke-width':1,'stroke-dasharray':'3 4'});
+  el('text',{x:X(-25),y:Yp(0)-6,'text-anchor':'end',fill:'var(--muted)','font-size':11,'font-family':'var(--mono)'},'occlusal plane z = 0');
+  // scan
+  let p=''; for (const sg of d.scan_segs) p += 'M'+X(sg[0][0]).toFixed(1)+' '+Yp(sg[0][1]).toFixed(1)+'L'+X(sg[1][0]).toFixed(1)+' '+Yp(sg[1][1]).toFixed(1);
+  el('path',{d:p,stroke:'var(--scan)','stroke-width':2,fill:'none','stroke-linecap':'round'});
+  const cols={P1:'var(--p1)',P2:'var(--p2)',P3:'var(--p3)'};
+  for (const key of ['P1','P3','P2']) for (const poly of d[key]) {
+    const dd = poly.map((q,i)=>(i?'L':'M')+X(q[0]).toFixed(1)+' '+Yp(q[1]).toFixed(1)).join('')+'Z';
+    el('path',{d:dd,fill:key==='P2'?'var(--acrylic-soft)':'none','fill-opacity':key==='P2'?0.8:0,stroke:cols[key],'stroke-width':key==='P2'?2.2:1.6,'stroke-linejoin':'round'});
+  }
+  // tips
+  const tips = d.tips;
+  for (const key of ['P1','P2','P3']) { const t=tips[key]; el('circle',{cx:X(t[1]),cy:Yp(t[2]),r:3.5,fill:cols[key]}); }
+  const ty = Yp(tips.P1[2]) + 26;
+  el('line',{x1:X(tips.P3[1]),x2:X(tips.P1[1]),y1:ty,y2:ty,stroke:'var(--ink)','stroke-width':1});
+  for (const key of ['P1','P2','P3']) { el('line',{x1:X(tips[key][1]),x2:X(tips[key][1]),y1:ty-5,y2:ty+5,stroke:'var(--ink)','stroke-width':1}); }
+  el('text',{x:X(tips.P2[1]),y:ty+20,'text-anchor':'middle',fill:'var(--ink)','font-size':12,'font-family':'var(--mono)'},'tips 2 mm apart');
+  // labels
+  el('text',{x:X(28),y:Yp(10.5),fill:'var(--muted)','font-size':11,'font-family':'var(--mono)'},'← anterior');
+  el('text',{x:X(-6),y:Yp(10.5),fill:'var(--muted)','font-size':11,'font-family':'var(--mono)'},'posterior →');
+  el('text',{x:X(-8),y:Yp(-9),fill:'var(--ink)','font-size':12,'font-family':'var(--body)'},'baton');
+  el('text',{x:X(16),y:Yp(-4),fill:'var(--ink)','font-size':12,'font-family':'var(--body)'},'palatal plate');
+  // scale bar
+  el('line',{x1:X(28),x2:X(18),y1:Yp(-19),y2:Yp(-19),stroke:'var(--ink)','stroke-width':2});
+  el('text',{x:X(23),y:Yp(-19)-7,'text-anchor':'middle',fill:'var(--ink)','font-size':11,'font-family':'var(--mono)'},'10 mm');
+}).catch(()=>{});
+
+/* kit */
+fetch('data/kit.json').then(r=>r.json()).then(d=>{
+  const c = themeColors();
+  const s = makeScene(document.getElementById('kitCanvas'), {target:[0,2,-6], cam:[95,-70,40], spin:false, gridZ:-25});
+  scenes.push(s); if (scenes.length===1) loop();
+  s.scene.add(new THREE.Mesh(geom(d.base), mat(c.scan,{roughness:0.6})));
+  const bm = mat(c.acr,{roughness:0.3}), ghost = mat(c.acr,{transparent:true,opacity:0.08,depthWrite:false});
+  const meshes = {}, tipsG = new THREE.Group(); s.scene.add(tipsG);
+  for (const id in d.batons) {
+    const g = geom(d.batons[id]); const m = new THREE.Mesh(g, ghost); m.visible=false; meshes[id]=m; s.scene.add(m);
+    g.computeBoundingBox(); const pos = g.attributes.position; let best=null;
+    for (let i=0;i<pos.count;i++){ const z=pos.getZ(i); if(!best||z<best.z) best={x:pos.getX(i),y:pos.getY(i),z}; }
+    const dot = new THREE.Mesh(new THREE.SphereGeometry(0.55,12,8), new THREE.MeshBasicMaterial({color:new THREE.Color(c.cool)}));
+    dot.position.set(best.x,best.y,best.z); tipsG.add(dot);
+  }
+  const grid = document.getElementById('kitGrid');
+  const lengths=[-2,0,2,4,6], angles=[-8,0,8];
+  grid.appendChild(Object.assign(document.createElement('span'),{className:'ax row',textContent:'angle \\ length'}));
+  for (const L of lengths) grid.appendChild(Object.assign(document.createElement('span'),{className:'ax',textContent:(L>0?'+':'')+L+' mm'}));
+  const fmt = (v,u)=> (v>0?'+':v<0?'−':'')+Math.abs(v)+u;
+  function pick(id){
+    for (const k in meshes){ meshes[k].visible = k===id; meshes[k].material = k===id ? bm : ghost; }
+    for (const b of grid.querySelectorAll('button')) b.setAttribute('aria-pressed', b.dataset.id===id?'true':'false');
+    const b = d.batons[id]; document.getElementById('kId').textContent=id;
+    document.getElementById('kL').textContent=fmt(b.dl,' mm'); document.getElementById('kA').textContent=fmt(b.da,'°');
+  }
+  for (const A of angles){
+    grid.appendChild(Object.assign(document.createElement('span'),{className:'ax row',textContent:fmt(A,'°')}));
+    for (const L of lengths){
+      const id = Object.keys(d.batons).find(k=>d.batons[k].dl===L && d.batons[k].da===A);
+      const b = document.createElement('button'); b.type='button'; b.textContent=id; b.dataset.id=id;
+      b.setAttribute('aria-label', id+': length '+fmt(L,' mm')+', angle '+fmt(A,' degrees'));
+      b.addEventListener('click',()=>pick(id)); grid.appendChild(b);
+    }
+  }
+  const env = d.tip_envelope; document.getElementById('envY').textContent=env.tip_y_range_mm.toFixed(1); document.getElementById('envZ').textContent=env.tip_z_range_mm.toFixed(1);
+  pick('K8');
+}).catch(()=>{});
+
+/* mold */
+fetch('data/mold.json').then(r=>r.json()).then(d=>{
+  const s = makeScene(document.getElementById('moldCanvas'), {target:[0,-2,16], cam:[110,-120,90], spin:false, gridZ:-0.5});
+  scenes.push(s); if (scenes.length===1) loop();
+  const parts = d.parts.map(p=>{
+    const translucent = p.stem.startsWith('counter');
+    const m = new THREE.Mesh(geom(p), mat(p.color,{transparent:translucent,opacity:translucent?0.5:1,depthWrite:!translucent,side:THREE.DoubleSide}));
+    s.scene.add(m); return {p,m};
+  });
+  const leg = document.getElementById('moldLegend');
+  for (const {p} of parts) leg.insertAdjacentHTML('beforeend','<span><i style="background:'+p.color+'"></i>'+p.label+'</span>');
+  const sl = document.getElementById('demold');
+  function upd(){
+    const t = sl.value/100*4; // phases 0..3
+    for (const {p,m} of parts){ if (p.phase==null) continue;
+      const f = Math.max(0, Math.min(1, t - p.phase)); const dist = (p.phase===3?28:45)*f*f*(3-2*f);
+      m.position.set(p.pull[0]*dist, p.pull[1]*dist, p.pull[2]*dist); }
+  }
+  sl.addEventListener('input',upd); upd();
+}).catch(()=>{});
+})();
+</script>
