@@ -1,0 +1,11 @@
+# Python 3.12 (built and tested with 3.12.13). Versions are the ones the Phase 0 checks passed with.
+numpy==2.5.4
+scipy==1.18.1
+trimesh==5.2.0
+manifold3d==3.5.4
+shapely==2.2.0
+networkx==3.7
+matplotlib==3.11.2
+pillow==13.0.0   # image reading for the frame-quality filter (already a matplotlib dependency)
+# The optional `--backend moldstudio` imports MoldStudio from the folder named by the MOLDSTUDIO_ROOT
+# environment variable. MoldStudio is not part of this release; the default backend needs nothing extra.

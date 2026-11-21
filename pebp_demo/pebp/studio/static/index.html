@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PEBP Studio</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<header id="top">
+  <div class="brand">PEBP Studio <span class="muted">pre-epiglottic baton plate</span></div>
+  <div class="case-pick">
+    <label for="casesel" class="muted">Case</label>
+    <select id="casesel"></select>
+    <button id="newcase">New case</button>
+    <button id="reveal" title="Open this case's folder on this computer" disabled>Show case folder</button>
+  </div>
+  <div id="badges"></div>
+</header>
+<main id="app">
+  <aside id="steps"></aside>
+  <section id="view">
+    <canvas id="c"></canvas>
+    <iframe id="moldframe" title="Mold viewer" hidden></iframe>
+    <div id="viewbar">
+      <button data-view="iso">3D</button><button data-view="below">From below</button>
+      <button data-view="side">Side</button><button data-view="front">Front</button>
+    </div>
+    <div id="layers"></div>
+    <div id="legend" class="muted">drag: turn · shift-drag: pan · wheel: zoom · grid 10 mm · x patient's right, y anterior, z superior</div>
+    <div id="empty" hidden></div>
+  </section>
+</main>
+<footer id="console">
+  <div class="console-head"><span id="jobline">No build has run yet.</span><button id="togglelog">Show output</button></div>
+  <pre id="log" hidden></pre>
+</footer>
+<dialog id="newdlg">
+  <form method="dialog">
+    <h3>New case</h3>
+    <p class="muted">Use a code, never the patient's name. The case folder is made in the workspace on this computer.</p>
+    <input id="newname" placeholder="e.g. case07" pattern="[A-Za-z0-9][A-Za-z0-9_.\-]{0,63}" required>
+    <div class="row end"><button value="cancel" formnovalidate>Cancel</button><button id="newok" value="ok" class="primary">Create</button></div>
+  </form>
+</dialog>
+<script src="/static/three.min.js"></script>
+<script src="/static/app.js"></script>
+</body>
+</html>
