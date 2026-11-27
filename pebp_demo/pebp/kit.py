@@ -213,7 +213,7 @@ def export_stock(out: Path, kp: KitParams) -> dict:
     man = {"kind": "pebp-kit-stock", "variant": kp.variant, "params": asdict(kp), "batons": rows, "flag": LABEL,
            "frame": "attachment frame: plate posterior border at y = 0 (y anterior), plate mid-thickness at z = 0 (z superior)",
            "source": "Tübingen standard extension (Aretxabaleta 2025, CC BY 4.0), deformed by the project's skeleton deformer"}
-    (out / "kit_stock_manifest.json").write_text(json.dumps(man, indent=2))
+    (out / "kit_stock_manifest.json").write_text(json.dumps(man, indent=2), encoding="utf-8")
     return man
 
 

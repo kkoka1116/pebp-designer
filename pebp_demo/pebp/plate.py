@@ -8,7 +8,7 @@ import trimesh
 from shapely.geometry import LineString, Polygon, box
 
 from .landmarks import Landmarks, HeightField
-from .meshutil import slab_from_heightfields, lower_offset, clean_ring
+from .meshutil import TISSUE_CLIP_CLEARANCE_MM, slab_from_heightfields, lower_offset, clean_ring
 from .graded import ThicknessField, bow_anchors, measured_thickness
 
 
@@ -275,11 +275,15 @@ def design_base_plate(lm: Landmarks, hf: HeightField, p: PlateParams | None = No
     return mesh, hfb, outline, info
 
 
-def tissue_clip_solid(outline: np.ndarray, hfb: HeightField, height: float = 20.0, margin: float = 3.0, step: float = 0.8) -> trimesh.Trimesh:
+def tissue_clip_solid(outline: np.ndarray, hfb: HeightField, height: float = 20.0, margin: float = 3.0, step: float = 0.8,
+                      clearance: float = TISSUE_CLIP_CLEARANCE_MM) -> trimesh.Trimesh:
     """Solid occupying the space above the (blocked) intaglio over the plate footprint: anything of an
-    extension that falls inside it would sit in tissue (or in the cleft above the wax floor) and is cut away."""
+    extension that falls inside it would sit in tissue (or in the cleft above the wax floor) and is cut away.
+    Its floor runs `clearance` (5 µm) above the intaglio rather than on it, so the cut never grazes the
+    plate's fitting surface, which pinched the mesh (see meshutil.CUTTER_CLEARANCE_MM). The cut moves by
+    5 µm, far below what a scanner or printer resolves (about 2 mm³ on a 3,600 mm³ synthetic device)."""
     poly = Polygon(outline).buffer(margin)
     ring = np.array(poly.exterior.coords)[:-1]
     top = lambda xy: hfb(xy) + height
     nrm = lambda xy: np.tile([0.0, 0.0, 1.0], (len(xy), 1))
-    return slab_from_heightfields(ring, step, top, nrm, height)
+    return slab_from_heightfields(ring, step, top, nrm, height - clearance, bottom_fn=lambda xy: hfb(xy) + clearance)

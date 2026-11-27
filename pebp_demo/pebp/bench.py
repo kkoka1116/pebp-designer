@@ -142,7 +142,7 @@ def build(out: Path, kp: KitParams | None = None, cp: ChairsideParams | None = N
 
     for k in ("shear_substrate_tray", "shear_collar_half", "monomer_disc_tray"):
         m = trimesh.load(out / files[k]); val[f"{k}_watertight"] = bool(m.is_watertight)
-    with open(out / "bench_results_template.csv", "w", newline="") as f:
+    with open(out / "bench_results_template.csv", "w", newline="", encoding="utf-8") as f:
         w = csv.writer(f)
         w.writerow(["test", "specimen_id", "group", "date", "operator", "resin_lot", "wire_lot", "cure", "value", "unit", "failure_mode", "notes"])
         for tst in TESTS:
@@ -155,5 +155,5 @@ def build(out: Path, kp: KitParams | None = None, cp: ChairsideParams | None = N
                       "wire_S": winfo, "wire_C_span_mm": [cp.wire_start_after_root, cp.wire_end_before_tip]},
            "files": files, "validation": val, "ok": all(val.values()), "tests": TESTS,
            "kit_params": asdict(kp), "chairside_params": asdict(cp), "protocol": "docs/CHAIRSIDE_BENCH.md"}
-    (out / "bench_manifest.json").write_text(json.dumps(man, indent=2))
+    (out / "bench_manifest.json").write_text(json.dumps(man, indent=2), encoding="utf-8")
     return man

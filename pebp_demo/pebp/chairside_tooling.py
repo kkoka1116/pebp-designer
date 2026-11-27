@@ -176,7 +176,7 @@ def base_tooling(ctx: dict, base, kp, cp, border_y: float, z_mid: float, binfo: 
                                "lift the base off the working model"],
            "pour_orientation": "model base on the bench (z = 0), counter on top, sprue opening upward",
            "validation": val}
-    (out / "manifest.json").write_text(json.dumps(man, indent=2))
+    (out / "manifest.json").write_text(json.dumps(man, indent=2), encoding="utf-8")
     return {"files": {k: f"{rel}/{v}" for k, v in files.items()}, "pmma_needed_ml": man["pmma_needed_ml"],
             "validation": val}
 
@@ -262,7 +262,7 @@ def stock_baton_tooling(entry: dict, kp, cp, out: Path | None = None) -> dict:
             m.export(out / f"{k}.stl")
         res["files"] = {k: f"{k}.stl" for k in files}
         (out / "manifest.json").write_text(json.dumps({**res, "flag": LABEL, "kit_params": asdict(kp), "chairside_params": asdict(cp),
-                                                        "frame": "attachment frame: plate border y = 0, plate mid-thickness z = 0"}, indent=2))
+                                                        "frame": "attachment frame: plate border y = 0, plate mid-thickness z = 0"}, indent=2), encoding="utf-8")
     return res
 
 
@@ -279,5 +279,5 @@ def export_stock_tooling(out: Path, kp, cp, ids: list[str] | None = None) -> dic
                      "cast_volume_mm3": r["cast_volume_mm3"], "wire_length_mm": r["wire"]["length_mm"]})
     man = {"kind": "pebp-chairside-stock-tooling", "variant": kp.variant, "flag": LABEL, "batons": rows,
            "kit_params": asdict(kp), "chairside_params": asdict(cp)}
-    (out / "stock_tooling_manifest.json").write_text(json.dumps(man, indent=2))
+    (out / "stock_tooling_manifest.json").write_text(json.dumps(man, indent=2), encoding="utf-8")
     return man

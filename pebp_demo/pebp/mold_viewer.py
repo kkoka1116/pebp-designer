@@ -223,7 +223,7 @@ def _pack(m: trimesh.Trimesh) -> dict:
 
 def write_mold_viewer(mold_dir: Path) -> Path:
     mold_dir = Path(mold_dir)
-    man = json.loads((mold_dir / "mold_manifest.json").read_text())
+    man = json.loads((mold_dir / "mold_manifest.json").read_text(encoding="utf-8"))
     pulls = {d["piece"]: d["pull_direction_pour_frame"] for d in man["validation"]["demold"]}
     pull_of = {"counter_left": pulls.get("counter_left"), "counter_right": pulls.get("counter_right"),
                "counter_oral": pulls.get("counter_oral"), "device_master": pulls.get("cast appliance"),
@@ -246,5 +246,5 @@ def write_mold_viewer(mold_dir: Path) -> Path:
             "split_normal": sp.get("split_normal_pour", [1, 0, 0]), "split_point": sp.get("split_point_pour", [0, 0, 0]),
             "center": ((lo + hi) / 2).round(2).tolist(), "case_name": Path(man["case"]).name}
     out = mold_dir / "mold_viewer.html"
-    out.write_text(HTML.replace("__DATA__", json.dumps(data)))
+    out.write_text(HTML.replace("__DATA__", json.dumps(data)), encoding="utf-8")
     return out

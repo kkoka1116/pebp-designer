@@ -82,7 +82,7 @@ def main():
     fig.suptitle("Border relief (project heuristic): vestibular flange capped 1.0 mm above the crest, labial frenulum notch, "
                  "tuberosities relieved 0.3 mm. Synthetic palates only.", fontsize=11)
     fig.savefig(OUT / "relief_compare.png", dpi=110)
-    (OUT / "relief_compare.json").write_text(json.dumps(rows, indent=2))
+    (OUT / "relief_compare.json").write_text(json.dumps(rows, indent=2), encoding="utf-8")
     for r in rows:
         print(f"{r['case']}: area {r['area_mm2'][0]} -> {r['area_mm2'][1]} mm2, flange trimmed {r['flange_trimmed_mm2']} mm2, "
               f"notch {r['frenulum_notch_removed_mm2']} mm2, volume {r['volume_mm3'][0]} -> {r['volume_mm3'][1]} mm3, watertight {r['watertight']}")

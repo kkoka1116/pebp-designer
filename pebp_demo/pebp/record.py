@@ -77,11 +77,11 @@ def upgrade(record: dict) -> dict:
 
 
 def save(record: dict, path: str | Path) -> None:
-    Path(path).write_text(json.dumps(record, indent=2))
+    Path(path).write_text(json.dumps(record, indent=2), encoding="utf-8")
 
 
 def load(path: str | Path) -> dict:
-    return upgrade(json.loads(Path(path).read_text()))
+    return upgrade(json.loads(Path(path).read_text(encoding="utf-8")))
 
 
 def normalise_id(did) -> str:

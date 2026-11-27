@@ -39,7 +39,7 @@ def check(name: str, ok: bool, detail: str):
 
 
 def rec() -> dict:
-    return json.loads(Path(D).read_text())
+    return json.loads(Path(D).read_text(encoding="utf-8"))
 
 
 def main():
@@ -93,19 +93,19 @@ def main():
     form["decision"] = {"accepted_device": "P2", "decided_by_role": "ENT",
                         "modifications": [{"device": "P2", "code": "shorten_mm", "amount": 1.5, "where": "bedside", "finding": "too_long"},
                                           {"device": "P2", "code": "curve_deg", "amount": 10, "where": "bedside"}]}
-    (OUT / "form.json").write_text(json.dumps(form))
+    (OUT / "form.json").write_text(json.dumps(form), encoding="utf-8")
     out = run("fitting", "log", D, "--form", OUT / "form.json")
     r = rec()
     s = r["fitting_sessions"][-1]
     check("fitting form round trip", s["variants_built"] == ["A2"] and any("gag" in f for f in s["flags"]) and any("120" in f or "2 h" in f for f in s["flags"]),
           f"built {s['variants_built']}, {len(s['flags'])} flags")
     bad = json.loads(json.dumps(form)); bad["session"]["sedation"] = "asleep"
-    (OUT / "bad.json").write_text(json.dumps(bad))
+    (OUT / "bad.json").write_text(json.dumps(bad), encoding="utf-8")
     rb = subprocess.run([sys.executable, "-m", "pebp", "fitting", "log", D, "--form", str(OUT / "bad.json")], cwd=ROOT, capture_output=True, text=True)
     check("invalid form rejected", rb.returncode == 2 and "sedation" in rb.stderr and len(rec()["fitting_sessions"]) == 1, rb.stderr.strip().splitlines()[0])
 
     run("mold", OUT)
-    man = json.loads((OUT / "mold" / "mold_manifest.json").read_text())
+    man = json.loads((OUT / "mold" / "mold_manifest.json").read_text(encoding="utf-8"))
     v = man["validation"]
     w = man["features"]["safety_wire"]
     check("tooling for A2 valid and registered", v["ok"] and man["registered_as"] == "C1" and max(v["device_inside_piece_mm3"].values()) < 0.5,
@@ -115,7 +115,7 @@ def main():
 
     # direct print: the same wire, embedded in a printed plate instead of a cast one (pebp/directprint.py)
     run("print", OUT, "--route", "all")
-    pm = {r: json.loads((OUT / "print" / r / "print_manifest.json").read_text()) for r in ("pause", "lid", "multimaterial")}
+    pm = {r: json.loads((OUT / "print" / r / "print_manifest.json").read_text(encoding="utf-8")) for r in ("pause", "lid", "multimaterial")}
     pz, pw = pm["pause"]["features"]["pause"], pm["pause"]["safety_wire"]
     check("direct print: pause route valid and registered", pm["pause"]["validation"]["ok"] and pm["pause"]["registered_as"] == "D1"
           and pm["pause"]["validation"]["wire_cover"]["min_mm"] >= 0.8,
@@ -134,8 +134,8 @@ def main():
     from pebp.directprint import build as print_build, PrintParams
     # experimental core + flexible skin (experimental): built for bench specimens, never registered
     n_printed = len(rec()["printed_plates"])
-    so = json.loads((print_build(OUT, PrintParams(route="multimaterial", device="A2", skin_mm=0.5)) / "print_manifest.json").read_text())
-    si = json.loads((print_build(OUT, PrintParams(route="multimaterial", device="A2", skin_mm=0.5, skin_mode="inside")) / "print_manifest.json").read_text())
+    so = json.loads((print_build(OUT, PrintParams(route="multimaterial", device="A2", skin_mm=0.5)) / "print_manifest.json").read_text(encoding="utf-8"))
+    si = json.loads((print_build(OUT, PrintParams(route="multimaterial", device="A2", skin_mm=0.5, skin_mode="inside")) / "print_manifest.json").read_text(encoding="utf-8"))
     ko, ki, t = so["features"]["skin"], si["features"]["skin"], so["extension_params"]["thickness"]
     check("skinned baton: bench only, geometry and budget right",
           not so["validation"]["ok"] and not si["validation"]["ok"] and len(rec()["printed_plates"]) == n_printed
@@ -172,7 +172,7 @@ def main():
     T = trimesh.transformations.random_rotation_matrix(rng.random(3)); T[:3, 3] = rng.uniform(-40, 40, 3)
     m.apply_transform(T); m.export(OUT / "ground_scan.stl")
     run("fitting", "measure", D, "--device", "C1", "--scan", OUT / "ground_scan.stl", "--out", OUT / "measure.json")
-    meas = json.loads((OUT / "measure.json").read_text())
+    meas = json.loads((OUT / "measure.json").read_text(encoding="utf-8"))
     check("ground plate measured from a noisy, moved scan", abs(meas["tip"]["shortened_mm"] - 1.2) < 0.1
           and meas["deviation"]["scan_to_design"]["within_0.25_mm"] > 0.9,
           f"{meas['tip']['shortened_mm']:+.2f} mm (true 1.2)")
@@ -184,7 +184,7 @@ def main():
     c.vertices = v + rng.normal(0, 0.02, v.shape)
     c.apply_transform(T); c.export(OUT / "warped_cast_scan.stl")
     run("measure", OUT / "cast_1.stl", OUT / "warped_cast_scan.stl", "--record", D, "--out", OUT / "cast_measure.json")
-    reg = json.loads((OUT / "cast_measure.json").read_text())["deviation"]["scan_to_design"]["regions"]
+    reg = json.loads((OUT / "cast_measure.json").read_text(encoding="utf-8"))["deviation"]["scan_to_design"]["regions"]
     check("region split localises a palatal warp", reg["intaglio"]["mean_signed_mm"] < -0.03 and abs(reg["baton"]["mean_signed_mm"]) < 0.01,
           f"intaglio {reg['intaglio']['mean_signed_mm']:+.3f} mm, baton {reg['baton']['mean_signed_mm']:+.3f} mm")
 
@@ -193,7 +193,7 @@ def main():
     check("sleep study tied to the device", sl["device"] == "C1" and sl["meets_target"] is True and sl["device_sha256"], f"{sl['index']} {sl['value_per_h']}/h")
 
     run("design", OUT / "scan.stl", "--out", OUT / "parametric", "--extension", "parametric")
-    rp = json.loads((OUT / "parametric" / "design.json").read_text())
+    rp = json.loads((OUT / "parametric" / "design.json").read_text(encoding="utf-8"))
     check("parametric mode still works", all(p["qc"]["overall"] == "pass" for p in rp["prototypes"]), rp["extension_mode"])
 
     # graded-thickness plate (project heuristic): the default stays uniform; the graded option keeps full
@@ -202,7 +202,7 @@ def main():
           and r0["plate"]["params"]["profile"] == "uniform", f"profile {r0['plate']['params']['profile']}")
     G = OUT / "graded"
     run("design", OUT / "scan.stl", "--out", G, "--final", "--plate-profile", "graded")
-    rg = json.loads((G / "design.json").read_text())
+    rg = json.loads((G / "design.json").read_text(encoding="utf-8"))
     tp = rg["plate"]["thickness_profile"]
     check("graded field: floor, gradient, keep-outs", tp["field_min_mm"] >= 1.5 and tp["measured_gradient_max"] <= 1 / 3 + 1e-3
           and {"baton_root", "cleft_block_out", "bow_wire_left", "bow_wire_right"} <= set(tp["rigid_zones_mm2"])
@@ -216,7 +216,7 @@ def main():
           and fq.get("graded plate: below Tübingen thickness") == "warn" and fq.get("graded plate: thin floor") == "pass",
           f"final QC {rg['final_design']['qc']['overall']}")
     run("mold", G)
-    vg = json.loads((G / "mold" / "mold_manifest.json").read_text())["validation"]
+    vg = json.loads((G / "mold" / "mold_manifest.json").read_text(encoding="utf-8"))["validation"]
     check("tooling for a graded plate valid", vg["ok"], f"ok={vg['ok']}, final QC {vg['final_qc']['overall']}")
     rb = subprocess.run([sys.executable, "-m", "pebp", "design", str(OUT / "scan.stl"), "--out", str(OUT / "graded_bad"),
                          "--plate-profile", "graded", "--thin-thickness", "1.2"], cwd=ROOT, capture_output=True, text=True)
@@ -226,7 +226,7 @@ def main():
     # covered, the posterior border does not move, and tooling still builds
     B = OUT / "relief"
     run("design", OUT / "scan.stl", "--out", B, "--final", "--plate-profile", "graded", "--border-relief")
-    rr = json.loads((B / "design.json").read_text())
+    rr = json.loads((B / "design.json").read_text(encoding="utf-8"))
     br = rr["plate"]["border_relief"]
     from shapely.geometry import Point, Polygon
     o_g, o_r = np.load(G / "plate_outline.npy"), np.load(B / "plate_outline.npy")
@@ -247,16 +247,16 @@ def main():
           and "project heuristic" in rr["design_choices"]["border_relief"]["flag"] and fq.get("border relief: retention") == "warn",
           f"final QC {rr['final_design']['qc']['overall']}")
     run("print", G, "--route", "pause")
-    gw = json.loads((G / "print" / "pause" / "print_manifest.json").read_text())["validation"]
+    gw = json.loads((G / "print" / "pause" / "print_manifest.json").read_text(encoding="utf-8"))["validation"]
     check("direct print of a graded plate flags the thin floor", gw["ok"] and any("graded" in x for x in gw["warnings"]),
           f"ok={gw['ok']}, warnings {len(gw['warnings'])}")
     run("mold", B)
-    vb = json.loads((B / "mold" / "mold_manifest.json").read_text())["validation"]
+    vb = json.loads((B / "mold" / "mold_manifest.json").read_text(encoding="utf-8"))["validation"]
     check("tooling for a relieved plate valid", vb["ok"], f"ok={vb['ok']}, final QC {vb['final_qc']['overall']}")
 
     # manufacturing planner: one command picks the route for the site's kit, names the device, builds it
     mk = subprocess.run([sys.executable, "-m", "pebp", "make", str(OUT), "--build"], cwd=ROOT, capture_output=True, text=True)
-    mp = json.loads((OUT / "make" / "final" / "make_plan.json").read_text()) if mk.returncode == 0 else {}
+    mp = json.loads((OUT / "make" / "final" / "make_plan.json").read_text(encoding="utf-8")) if mk.returncode == 0 else {}
     fs = [s for s in rec()["fitting_sessions"] if s.get("variants_built")]
     check("make: default kit casts PMMA with the wire, on the device from the last fitting session",
           mk.returncode == 0 and mp["route"] == "mold" and mp["fallback"] == "lab" and mp["device"] == fs[-1]["variants_built"][-1]
@@ -289,7 +289,7 @@ def main():
     o = np.load(R / "plate_outline.npy")
     seg = float(np.linalg.norm(np.diff(np.vstack([o, o[:1]]), axis=0), axis=1).min())
     m = subprocess.run([sys.executable, "-m", "pebp", "mold", str(R)], cwd=ROOT, capture_output=True, text=True)
-    vr = json.loads((R / "mold" / "mold_manifest.json").read_text())["validation"] if m.returncode == 0 else {"ok": False}
+    vr = json.loads((R / "mold" / "mold_manifest.json").read_text(encoding="utf-8"))["validation"] if m.returncode == 0 else {"ok": False}
     check("README quick-start path: synth, design, mold", m.returncode == 0 and vr["ok"],
           f"exit {m.returncode}, ok={vr['ok']}, shortest outline edge {seg:.1e} mm"
           + ("" if m.returncode == 0 else f": {(m.stderr.strip().splitlines() or ['?'])[-1]}"))
@@ -306,7 +306,7 @@ def main():
     nodev = subprocess.run([sys.executable, "-m", "pebp", "carry", str(K / "p1" / "design.json"), str(K / "p2" / "scan.stl"),
                             "--out", str(K / "p2")], cwd=ROOT, capture_output=True, text=True)
     run("carry", K / "p1" / "design.json", K / "p2" / "scan.stl", "--device", "A2", "--out", K / "p2")
-    r1, r2 = (json.loads((K / q / "design.json").read_text()) for q in ("p1", "p2"))
+    r1, r2 = (json.loads((K / q / "design.json").read_text(encoding="utf-8")) for q in ("p1", "p2"))
     o, n = r1["tpp_metrics"]["A2"], r2["tpp_metrics"]["T"]
     v_old, v_new = np.subtract(o["baton_tip"], o["baton_root"]), np.subtract(n["baton_tip"], n["baton_root"])
     check("carry: baton pose kept on the new plate",
@@ -326,7 +326,7 @@ def main():
     run("adjust", K / "p2" / "design.json", "--from", "T", "--mod", "shorten_mm=0.5", "--bedside")
     run("synth", "--preset", "prs", "--sd", "1.5", "--seed", "4", "--out", K / "p3")
     run("carry", K / "p2" / "design.json", K / "p3" / "scan.stl", "--device", "A1", "--prototypes", "--out", K / "p3")
-    r3 = json.loads((K / "p3" / "design.json").read_text())
+    r3 = json.loads((K / "p3" / "design.json").read_text(encoding="utf-8"))
     lin3 = json.loads(run("lineage", K / "p3" / "design.json", "--device", "T", "--json"))
     pr = {p["id"]: p["params"] for p in r3["prototypes"]}
     check("carry: third plate, prototypes centred on the carried baton",
@@ -337,7 +337,7 @@ def main():
           f"P1-P3 ap {[pr[k]['ap_offset'] for k in ('P1', 'P2', 'P3')]}")
     # cleft type (clinical entry, pebp/cleft.py): it picks the baton and the bridging; no entry keeps the scan analysis
     run("design", OUT / "scan.stl", "--out", OUT / "cleft_none", "--cleft", "none", "--cleft-entered-by", "T")
-    rn = json.loads((OUT / "cleft_none" / "design.json").read_text())
+    rn = json.loads((OUT / "cleft_none" / "design.json").read_text(encoding="utf-8"))
     cs = rn["cleft_status"]
     check("cleft type 'none' on a cleft scan: no-cleft baton, the gap bridged as a scan hole, no midline bulge",
           rn["extension_mode"] == "tuebingen-nocleft" and cs["value"] == "none" and cs["scan_found_cleft"] is True
@@ -347,12 +347,34 @@ def main():
           f"{rn['extension_mode']}, holes {rn['plate'].get('scan_holes_blocked', {}).get('count')}, bulge {rn['plate']['params']['posterior_bulge']}, "
           f"border y {rn['attachment']['posterior_border_y']} vs {r0['attachment']['posterior_border_y']} with no entry")
     run("design", OUT / "scan.stl", "--out", OUT / "cleft_hs", "--cleft", "hard-soft", "--cleft-entered-by", "T")
-    rh = json.loads((OUT / "cleft_hs" / "design.json").read_text())
+    rh = json.loads((OUT / "cleft_hs" / "design.json").read_text(encoding="utf-8"))
     check("cleft type 'hard and soft': cleft baton and cleft block-out, as with no entry",
           rh["extension_mode"] == "tuebingen-cleft" and rh["landmarks"]["cleft_present"] and rh["plate"]["cleft_floor_z"] is not None
           and rh["plate"]["params"]["posterior_bulge"] == 2.0 and r0["cleft_status"]["value"] is None
           and r0["plate"]["params"]["posterior_bulge"] == 2.0,
           f"{rh['extension_mode']}, cleft floor z {rh['plate']['cleft_floor_z']}")
+
+    # no-cleft devices reload watertight: the flat no-cleft extension used to pinch under the number dimples
+    # and the wire groove, so the files were broken while the in-memory QC said pass. Seed 0 hit both.
+    from pebp.meshutil import reloads_watertight
+    nc = OUT / "nocleft"
+    run("synth", "--out", nc, "--no-cleft", "--seed", 0)
+    run("design", nc / "scan.stl", "--out", nc / "d", "--final")
+    rnc = json.loads((nc / "d" / "design.json").read_text(encoding="utf-8"))
+    files = ["base_plate.stl", "final_design.stl"] + [p["file"] for p in rnc["prototypes"]]
+    back = {f: trimesh.load(nc / "d" / f) for f in files}
+    bad = [f for f, m in back.items() if not (m.is_watertight and m.body_count == 1)]
+    check("no-cleft devices reload from STL as one closed solid",
+          rnc["extension_mode"] == "tuebingen-nocleft" and not bad and len(files) == 5
+          and all(q["qc"]["overall"] == "pass" for q in rnc["prototypes"] + [rnc["final_design"]]),
+          f"{rnc['extension_mode']}, {len(files) - len(bad)}/{len(files)} files watertight after reload" + (f", broken {bad}" if bad else ""))
+    # and QC can see the defect: two cubes sharing an edge through duplicated vertices are watertight in
+    # memory and not after an STL round trip
+    a = trimesh.creation.box(extents=(1, 1, 1)); b = a.copy(); b.apply_translation((1, 1, 0))
+    pinched = trimesh.Trimesh(np.vstack([a.vertices, b.vertices]), np.vstack([a.faces, b.faces + len(a.vertices)]), process=False)
+    check("QC watertight check reads the mesh as written to STL",
+          pinched.is_watertight and not reloads_watertight(pinched) and reloads_watertight(a),
+          f"in memory {pinched.is_watertight}, after reload {reloads_watertight(pinched)}")
 
     # orientation on scan-like palates (ragged rim, hole, wider than deep): scripts/orient_check.py
     sys.path.insert(0, str(ROOT / "scripts"))

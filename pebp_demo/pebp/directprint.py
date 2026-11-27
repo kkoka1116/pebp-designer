@@ -452,7 +452,7 @@ def build(case_dir: Path, pp: PrintParams | None = None) -> Path:
                 and d["route"] == pp.route and d["final_plate_thickness"] == ctx["pp"].thickness]
         n = same[-1]["n"] if same else max([d["n"] for d in rec["printed_plates"]], default=0) + 1
         manifest["registered_as"] = f"D{n}"
-        (out / "print_manifest.json").write_text(json.dumps(manifest, indent=2))
+        (out / "print_manifest.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
         fn = f"printed_{n}.stl"
         device.export(case_dir / fn)
         entry = {"n": n, "id": f"D{n}", "file": fn, "sha256": rec_io.file_sha256(case_dir / fn), "from": device_id,
@@ -470,8 +470,8 @@ def build(case_dir: Path, pp: PrintParams | None = None) -> Path:
         rec_io.save(rec, case_dir / "design.json")
     else:
         manifest["registered_as"] = None
-        (out / "print_manifest.json").write_text(json.dumps(manifest, indent=2))
-    (out / "PRINT_NOTES.md").write_text(print_notes(manifest))
+        (out / "print_manifest.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
+    (out / "PRINT_NOTES.md").write_text(print_notes(manifest), encoding="utf-8")
     return out
 
 

@@ -2,7 +2,7 @@
 
 Research software that turns an infant's maxillary intraoral scan into a design for the pre-epiglottic baton plate (PEBP, also called the Tübingen palatal plate), used to open the airway in infants with Robin sequence.
 
-> **Not a medical device.** Nothing designed with this software has been printed, cast, bench-tested or clinically validated. It is for research and teaching. Clinical choices stay with the clinician: the software stores and flags them and never makes them.
+> **Research use only. Not for clinical use.** This is not a medical device. It has not been cleared or approved by any regulator, and nothing designed with it has been printed, cast, bench-tested or clinically validated. It is for research and teaching. Clinical choices stay with the clinician: the software stores and flags them and never makes them.
 
 What it does:
 
@@ -15,7 +15,11 @@ What it does:
 - offers a modular try-in kit and a two-visit chairside route (research routes, untested);
 - runs as **PEBP Studio**, a six-step app that stays on your own computer.
 
-## Install
+## Download PEBP Studio
+
+Ready-to-run builds for macOS (Apple silicon and Intel) and Windows are on the [Releases page](https://github.com/kkoka1116/pebp-designer/releases); they need no Python. See [docs/INSTALL.md](docs/INSTALL.md) for the first start (the builds are not code-signed yet) and [CHANGELOG.md](CHANGELOG.md) for what changed.
+
+## Install from source
 
 Python 3.12.
 

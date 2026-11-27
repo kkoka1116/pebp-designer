@@ -1,6 +1,7 @@
 """Checks of PEBP Studio's local server on synthetic data only.
 
     .venv/bin/python scripts/studio_check.py           (about 30 s; --mold adds the mold build, about a minute more)
+    .venv/bin/python scripts/studio_check.py --exe "dist/PEBP Studio/pebp-studio"   (the same, against the download)
 
 Starts the server on a free port of 127.0.0.1, walks a synthetic case through the steps over HTTP the way
 the browser does, and asserts the rules the UI is there to keep: the server answers only this computer
@@ -138,9 +139,28 @@ def kit_route(c: "Client", ws: Path) -> None:
 def main():
     do_mold = "--mold" in sys.argv
     ws = Path(tempfile.mkdtemp(prefix="pebp_studio_"))
-    httpd = make_server(ws, 0)
-    port = httpd.server_address[1]
-    threading.Thread(target=httpd.serve_forever, daemon=True).start()
+    exe = sys.argv[sys.argv.index("--exe") + 1] if "--exe" in sys.argv else None
+    if exe:
+        # the downloadable app (packaging/build.py): the same checks against its own server and build steps
+        import socket
+        import subprocess
+        with socket.socket() as s:
+            s.bind(("127.0.0.1", 0))
+            port = s.getsockname()[1]
+        proc = subprocess.Popen([exe, "studio", "--workspace", str(ws), "--port", str(port), "--no-browser"],
+                                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        httpd = type("Frozen", (), {"server_address": ("127.0.0.1", port),
+                                    "shutdown": lambda self: (proc.terminate(), proc.wait(10))})()
+        for _ in range(60):
+            try:
+                urllib.request.urlopen(f"http://127.0.0.1:{port}/", timeout=2)
+                break
+            except OSError:
+                time.sleep(1)
+    else:
+        httpd = make_server(ws, 0)
+        port = httpd.server_address[1]
+        threading.Thread(target=httpd.serve_forever, daemon=True).start()
     c = Client(port)
     try:
         # the server answers only this computer, and only requests its own page can make
@@ -216,8 +236,8 @@ def main():
         code, j = c.req(f"/api/case/{case}/settings", {"tip_target": "in_vallecula", "by": ""})
         check("clinical choice needs a name", code == 400, j.get("error", ""))
         c.req(f"/api/case/{case}/settings", {"tip_target": "in_vallecula", "by": "T"})
-        rec = json.loads((ws / case / "design.json").read_text())
-        rv = json.loads((ws / case / "review.json").read_text())
+        rec = json.loads((ws / case / "design.json").read_text(encoding="utf-8"))
+        rv = json.loads((ws / case / "review.json").read_text(encoding="utf-8"))
         check("tip target stored in the record with who set it", rec["clinical_settings"]["tip_target"] == "in_vallecula"
               and any(e.get("tip_target") == "in_vallecula" and e["by"] == "T" for e in rv["log"]))
 
@@ -230,7 +250,7 @@ def main():
         code, j = c.req(f"/api/case/{case}/review", {"step": "changes", "by": "T"})
         check("STOP finding holds the approval", code == 409 and "STOP" in j.get("error", ""), j.get("error", ""))
         code, _ = c.req(f"/api/case/{case}/review", {"step": "changes", "by": "T", "override": True})
-        rv = json.loads((ws / case / "review.json").read_text())
+        rv = json.loads((ws / case / "review.json").read_text(encoding="utf-8"))
         check("approve anyway is recorded with the findings it overrode",
               code == 200 and rv["steps"]["changes"]["override"] and "A1" in rv["steps"]["changes"]["override"][0])
         c.req(f"/api/case/{case}/review", {"step": "changes", "action": "withdraw", "by": "T"})

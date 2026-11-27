@@ -44,7 +44,7 @@ def fake_record(zpath: Path, md5: str, name: str = "frames.zip") -> Path:
                          "creators": [{"name": "Synthetic"}]},
             "files": [{"key": name, "checksum": f"md5:{md5}", "links": {"self": zpath.resolve().as_uri()}}]}
     p = zpath.with_name(zpath.stem + "_record.json")
-    p.write_text(json.dumps(meta))
+    p.write_text(json.dumps(meta), encoding="utf-8")
     return p
 
 
@@ -72,7 +72,7 @@ def main():
     md5 = hashlib.md5(zpath.read_bytes()).hexdigest()
     dl = OUT / "data"
     r = run("fetch", "--out", dl, "--api-url", fake_record(zpath, md5).resolve().as_uri())
-    src = json.loads((dl / "SOURCE.json").read_text())
+    src = json.loads((dl / "SOURCE.json").read_text(encoding="utf-8"))
     ds = fq.scan_dataset(dl / "frames")
     check("fetch: checksum, extract, SOURCE.json", src["files"][0]["md5"] == md5 and src["license"] == "cc-by-4.0"
           and src["commercial_use_ok"] and len(ds["y"]) == 160 and np.bincount(ds["y"]).tolist() == [40] * 4,
@@ -91,8 +91,8 @@ def main():
           and not (OUT / "slip" / "frames" / "escaped.png").exists(), "rejected")
 
     nc = OUT / "nc_record.json"
-    meta = json.loads(fake_record(zpath, md5).read_text()); meta["metadata"]["license"] = {"id": "cc-by-nc-4.0"}
-    nc.write_text(json.dumps(meta))
+    meta = json.loads(fake_record(zpath, md5).read_text(encoding="utf-8")); meta["metadata"]["license"] = {"id": "cc-by-nc-4.0"}
+    nc.write_text(json.dumps(meta), encoding="utf-8")
     rn = run("fetch", "--out", OUT / "nc", "--api-url", nc.resolve().as_uri())
     check("fetch warns on a non-commercial licence", "warning" in rn.stderr and "cc-by-nc" in rn.stderr, "warned")
 
@@ -106,7 +106,7 @@ def main():
     # train with CV, model round trip
     tr = OUT / "train"
     run("train", dl / "frames", "--out", tr, "--folds", 4, "--group-regex", r"([IBSU]/vid\d+)_")
-    m = json.loads((tr / "metrics.json").read_text())
+    m = json.loads((tr / "metrics.json").read_text(encoding="utf-8"))
     check("cross-validated baseline on synthetic frames", m["macro_f1"] >= 0.9 and m["cv"]["grouped"] and m["source"]["synthetic"],
           f"macro F1 {m['macro_f1']:.3f}, accuracy {m['accuracy']:.3f}, {m['cv']['n_groups']} groups")
     model = fq.load_model(tr / "frame_quality_model.json")
@@ -119,7 +119,7 @@ def main():
     ho = OUT / "heldout"
     run("synth", "--out", ho, "--n", 30, "--seed", 9)
     run("eval", ho, "--model", tr / "frame_quality_model.json", "--out", OUT / "eval")
-    e = json.loads((OUT / "eval" / "metrics.json").read_text())
+    e = json.loads((OUT / "eval" / "metrics.json").read_text(encoding="utf-8"))
     kf = e["keep_filter"]
     check("held-out evaluation and keep filter", e["macro_f1"] >= 0.85 and kf["unusable_kept_fraction"] <= 0.1 and kf["recall_informative_kept"] >= 0.85,
           f"macro F1 {e['macro_f1']:.3f}; kept {kf['kept']}, {kf['unusable_kept_fraction']:.0%} unusable kept")
@@ -127,7 +127,7 @@ def main():
     # classify CSV
     c = OUT / "classify.csv"
     run("classify", ho / "informative", ho / "underexposed", "--model", tr / "frame_quality_model.json", "--out", c)
-    rows = list(csv.DictReader(open(c)))
+    rows = list(csv.DictReader(open(c, encoding="utf-8")))
     keep_inf = np.mean([r["keep"] == "1" for r in rows if "/informative/" in r["path"]])
     keep_dark = np.mean([r["keep"] == "1" for r in rows if "/underexposed/" in r["path"]])
     sums = max(abs(sum(float(r[f"p_{k}"]) for k in fq.CLASSES) - 1) for r in rows)

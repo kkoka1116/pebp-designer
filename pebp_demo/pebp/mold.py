@@ -469,7 +469,7 @@ def build(case_dir: Path, mp: MoldParams | None = None, debug: dict | None = Non
         same = [c for c in rec["cast_plates"] if c["from"] == device_id and c["params"] == asdict(ep) and c["final_plate_thickness"] == t]
         n = same[-1]["n"] if same else max([c["n"] for c in rec["cast_plates"]], default=0) + 1
         manifest["registered_as"] = f"C{n}"
-        (out / "mold_manifest.json").write_text(json.dumps(manifest, indent=2))
+        (out / "mold_manifest.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
         fn = f"cast_{n}.stl"
         device.export(case_dir / fn)                   # design frame, for measuring the cast part against
         entry = {"n": n, "id": f"C{n}", "file": fn, "sha256": rec_io.file_sha256(case_dir / fn), "from": device_id,
@@ -485,5 +485,5 @@ def build(case_dir: Path, mp: MoldParams | None = None, debug: dict | None = Non
         rec_io.save(rec, case_dir / "design.json")
     else:
         manifest["registered_as"] = None
-        (out / "mold_manifest.json").write_text(json.dumps(manifest, indent=2))
+        (out / "mold_manifest.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
     return out

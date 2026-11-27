@@ -225,7 +225,7 @@ def write(case_dir: Path, cat: dict) -> Path:
                                 "socket_drop_mm": b["attachment"].get("socket_drop_mm", 0.0)} for b in cat["bases"]},
             "choices": {**cat["choices"], "border_relief": ["true" if x else "false" for x in cat["choices"]["border_relief"]]},
             "basis": cat["choice_basis"], "explain": EXPLAIN, "meshes": meshes}
-    html = HTML.replace("__THREE__", THREE.read_text()).replace("__DATA__", json.dumps(data))
+    html = HTML.replace("__THREE__", THREE.read_text(encoding="utf-8")).replace("__DATA__", json.dumps(data))
     out = case_dir / "catalog" / "catalog_viewer.html"
-    out.write_text(html)
+    out.write_text(html, encoding="utf-8")
     return out

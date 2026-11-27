@@ -1,0 +1,20 @@
+PEBP Studio - RESEARCH USE ONLY. NOT FOR CLINICAL USE.
+
+PEBP Studio (PEBP Designer) is research and teaching software for designing the pre-epiglottic baton
+plate (Tuebingen palatal plate). It is not a medical device. It has not been cleared or approved by any
+regulator, and it has not been clinically validated. Nothing designed with it has yet been printed,
+cast or bench-tested.
+
+Do not use it to diagnose or treat any patient, and do not fit a device made from its output to a
+patient on the strength of this software. Every clinical choice (cleft type, tip target, sleep-study
+index and threshold, route, sign-off) belongs to the clinician. The software stores and flags those
+choices; it never makes them.
+
+Patient data: real intraoral scans and everything made from them are patient data. PEBP Studio works
+only on this computer (it answers requests from 127.0.0.1 only) and sends nothing anywhere. Keep its
+folder out of iCloud Drive, OneDrive, Dropbox and email.
+
+Licence: PolyForm Noncommercial 1.0.0 (LICENSE.md). The Tuebingen standard extension STLs are from
+Aretxabaleta M. et al., Bioengineering 2025;12:1063, CC BY 4.0. three.js is MIT.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND.

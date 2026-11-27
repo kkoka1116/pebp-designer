@@ -179,8 +179,8 @@ def write_viewer(case_dir: Path) -> Path:
     for p in sorted(case_dir.glob("adjusted_*.stl")):
         layers.append({"file": p.name, "name": f"Adjusted design {p.stem.split('_')[1]}", "color": "#ff9f43", "opacity": 1.0, "on": False,
                        "b64": base64.b64encode(p.read_bytes()).decode()})
-    record = json.loads((case_dir / "design.json").read_text()) if (case_dir / "design.json").exists() else {}
+    record = json.loads((case_dir / "design.json").read_text(encoding="utf-8")) if (case_dir / "design.json").exists() else {}
     html = HTML.replace("__DATA__", json.dumps({"layers": layers})).replace("__RECORD__", json.dumps(record))
     out = case_dir / "viewer.html"
-    out.write_text(html)
+    out.write_text(html, encoding="utf-8")
     return out

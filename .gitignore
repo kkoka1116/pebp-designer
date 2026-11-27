@@ -3,3 +3,5 @@ __pycache__/
 .venv/
 pebp_demo/out/
 .DS_Store
+pebp_demo/dist/
+pebp_demo/packaging/build/

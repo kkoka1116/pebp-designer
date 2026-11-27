@@ -234,6 +234,32 @@ def extrude_clean(poly: Polygon, height: float) -> trimesh.Trimesh:
     return trimesh.creation.extrude_polygon(clean_polygon(poly), height)
 
 
+# A cutter laid exactly along the surface it cuts puts some of its vertices on, or a float32 hair off,
+# that surface. The Manifold boolean then returns a pinched mesh: watertight in memory through its vertex
+# indices, with pairs of vertices at the same point. STL keeps no indices, so on reload those vertices weld
+# and edges end up shared by four faces. It showed on the flat faces of the no-cleft Tübingen extension
+# (number dimples, wire groove) and where the tissue clip runs along the plate's fitting surface. Such
+# cutters are moved off the surface they would sit on (see reloads_watertight): the dimples and the groove
+# by CUTTER_CLEARANCE_MM and grown by as much, so their depth is kept; the tissue clip by
+# TISSUE_CLIP_CLEARANCE_MM, small enough that the plate's fitting surface does not change in practice.
+# Either is many times the float32 spacing at these coordinates (about 2e-6 mm at 20 mm).
+CUTTER_CLEARANCE_MM = 0.05
+TISSUE_CLIP_CLEARANCE_MM = 0.005
+
+
+def reloads_watertight(mesh: trimesh.Trimesh) -> bool:
+    """True if the mesh is still one closed solid after a round trip through binary STL.
+
+    STL stores loose triangles in float32, so a reader welds vertices by position. A boolean can return
+    a mesh that is watertight only through its vertex indices (two vertices at the same point, kept
+    apart); it passes `is_watertight` in memory and fails once written and read back."""
+    import io
+    if not mesh.is_watertight:
+        return False
+    back = trimesh.load(io.BytesIO(mesh.export(file_type="stl")), file_type="stl")
+    return bool(back.is_watertight)
+
+
 SLIVER_MM3 = 0.01
 
 

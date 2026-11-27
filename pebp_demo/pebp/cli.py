@@ -66,7 +66,7 @@ def cmd_synth(a):
         truth["applied_transform"] = T.tolist()
     path = out / "scan.stl"
     mesh.export(path)
-    (out / "scan_truth.json").write_text(json.dumps(truth, indent=2))
+    (out / "scan_truth.json").write_text(json.dumps(truth, indent=2), encoding="utf-8")
     print(f"wrote {path}  ({len(mesh.vertices)} vertices, cleft={'yes' if p.cleft else 'no'}, unoriented={a.unoriented})")
 
 
@@ -86,7 +86,7 @@ def _build_one(g: dict, ep: ExtensionParams, number: int, mode: str, kind: str, 
     if groove and path is not None:
         mesh, wire = cut_wire_groove(mesh, path, ep, g["border_y"])
     qc = qc_prototype(mesh, path, ep, g["pp"], g["outline"], g["lm_json"], kind=kind, reference=reference, wire=wire,
-                      root=root_span(ext, g["border_y"], g["z_mid"], ep.lateral_offset), support=g["hfb"])
+                      root=root_span(ext, g["border_y"], g["z_mid"], ep.lateral_offset), support=g["hfb"], as_written=True)
     tip = tip_point(mesh, path) if path is not None else np.array(info["tip"])
     return {"mesh": mesh, "path": path, "qc": qc, "info": info, "wire": wire, "tip": tip}
 
@@ -298,7 +298,7 @@ def cmd_design(a, carry: dict | None = None):
         _print_qc(r["qc"])
     from . import airway
     airway.update(record, out)
-    (out / "airway_report.md").write_text(airway.report_md(record))
+    (out / "airway_report.md").write_text(airway.report_md(record), encoding="utf-8")
     if carry:
         from .carry import growth_summary
         record["carried_from"]["growth"] = growth_summary(record)
@@ -446,7 +446,7 @@ def cmd_fitting(a):
     if a.action == "form":
         txt = fit.printable_form()
         if a.out:
-            Path(a.out).write_text(txt); print(f"wrote {a.out}")
+            Path(a.out).write_text(txt, encoding="utf-8"); print(f"wrote {a.out}")
         else:
             print(txt)
         return
@@ -458,14 +458,14 @@ def cmd_fitting(a):
     if a.action == "template":
         txt = json.dumps(fit.template(record, devices), indent=2, ensure_ascii=False)
         if a.out:
-            Path(a.out).write_text(txt); print(f"wrote {a.out}")
+            Path(a.out).write_text(txt, encoding="utf-8"); print(f"wrote {a.out}")
         else:
             print(txt)
         return
     if a.action == "log":
         if not a.form:
             _fail("fitting log needs --form FORM.json")
-        form = json.loads(Path(a.form).read_text())
+        form = json.loads(Path(a.form).read_text(encoding="utf-8"))
         form.pop("_help", None)
         errors = fit.validate(form, devices)
         if errors:
@@ -536,7 +536,7 @@ def cmd_fitting(a):
             print(f"  {sec['s_after_root_mm']:5.1f} mm after root: width {sec['design']['width_mm']} -> {sec['scan']['width_mm']} mm, "
                   f"thickness {sec['design']['thickness_mm']} -> {sec['scan']['thickness_mm']} mm")
         if a.out:
-            Path(a.out).write_text(json.dumps(res, indent=2)); print(f"wrote {a.out}")
+            Path(a.out).write_text(json.dumps(res, indent=2), encoding="utf-8"); print(f"wrote {a.out}")
         if a.apply:
             amt = round(tip["shortened_mm"], 1)
             if amt < 0.2:
@@ -606,7 +606,7 @@ def cmd_measure(a):
               f"{100 * v['within_0.1_mm']:.0f}/{100 * v['within_0.25_mm']:.0f}/{100 * v['within_0.5_mm']:.0f}%")
         _print_regions(v)
     if a.out:
-        Path(a.out).write_text(json.dumps(res, indent=2)); print(f"wrote {a.out}")
+        Path(a.out).write_text(json.dumps(res, indent=2), encoding="utf-8"); print(f"wrote {a.out}")
     if a.aligned:
         aligned.export(a.aligned); print(f"wrote {a.aligned}")
 
@@ -617,7 +617,7 @@ def cmd_polyjet(a):
     from .polyjet import export, PolyJetParams
     out = export(Path(a.dir), profile=a.profile, params=PolyJetParams(skin_mm=a.skin, tip_mm=a.tip, rim_mm=a.rim, posterior_mm=a.posterior),
                  proto_number=a.proto, orientation=a.orientation, device_id=a.device)
-    man = json.loads((out / "manifest.json").read_text())
+    man = json.loads((out / "manifest.json").read_text(encoding="utf-8"))
     v = man["validation"]
     print(f"wrote {out}: {len(man['bodies'])} bodies -> assembly.3mf, manifest.json, PRINT_NOTES.md")
     for n, b in man["bodies"].items():
@@ -628,7 +628,7 @@ def cmd_polyjet(a):
 def cmd_mold(a):
     from .mold import build, MoldParams
     out = build(Path(a.dir), MoldParams(final_plate_thickness=a.final_thickness, wall=a.wall, proto=a.proto, device=a.device))
-    man = json.loads((out / "mold_manifest.json").read_text()); v = man["validation"]
+    man = json.loads((out / "mold_manifest.json").read_text(encoding="utf-8")); v = man["validation"]
     print(f"wrote {out}: " + ", ".join(man["files"].values()))
     print(f"  device {man['device']}; block {v['block_mm']} mm, cavity {v['cavity_volume_mm3']} mm3 (appliance {v['device_volume_mm3']}), "
           f"mix about {man['pmma_needed_ml']} ml PMMA")
@@ -669,7 +669,7 @@ def cmd_print(a):
                                              lid_side=a.lid_side, resin=resin, proto=a.proto, device=a.device,
                                              skin_mm=a.skin, skin_mode=a.skin_mode, skin_material=a.skin_material,
                                              wire=not a.no_wire))
-        man = json.loads((out / "print_manifest.json").read_text()); v = man["validation"]
+        man = json.loads((out / "print_manifest.json").read_text(encoding="utf-8")); v = man["validation"]
         print(f"wrote {out}: " + ", ".join(man["files"].values()))
         print(f"  route {route}: {man['route_info']['title']}; device {man['device']}; resin {man['resin']['name']}; about {man['resin_ml']} ml")
         if man["features"].get("pause"):
@@ -752,7 +752,7 @@ def cmd_catalog(a):
     if a.assemble:
         print("assembled for viewing:", catm.assemble(case, cat, a.assemble))
     if a.json:
-        Path(a.json).write_text(json.dumps({k: v for k, v in res.items() if k != "batons"}, indent=1, default=str))
+        Path(a.json).write_text(json.dumps({k: v for k, v in res.items() if k != "batons"}, indent=1, default=str), encoding="utf-8")
     if a.make:
         from .catalog_make import make
         try:
@@ -899,7 +899,7 @@ def cmd_airway(a):
         except (KeyError, ValueError) as e:
             _fail(e.args[0] if e.args else str(e))
     airway.update(record, case_dir)
-    (case_dir / "airway_report.md").write_text(airway.report_md(record))
+    (case_dir / "airway_report.md").write_text(airway.report_md(record), encoding="utf-8")
     rec.save(record, a.design)
     _print_reach(record)
     for k, v in record["airway"]["derived"].items():
@@ -992,7 +992,7 @@ def cmd_frames(a):
             _fail(f"only {len(set(ds['groups']))} groups for {a.folds} folds; lower --folds or fix --group-regex")
     synthetic = any(data.rglob("SYNTHETIC.txt"))
     srcf = next((p for p in [data / "SOURCE.json", data.parent / "SOURCE.json", data.parent.parent / "SOURCE.json"] if p.exists()), None)
-    src = json.loads(srcf.read_text()) if srcf else {}
+    src = json.loads(srcf.read_text(encoding="utf-8")) if srcf else {}
     desc = ("synthetic frames (code test)" if synthetic else
             f"{src.get('title') or data.name} ({src.get('doi', 'no DOI')}, licence {src.get('license', 'unknown')})")
     prov = {"data": str(data), "description": desc, "synthetic": synthetic, "doi": src.get("doi"), "license": src.get("license"),
@@ -1014,14 +1014,17 @@ def cmd_frames(a):
         m["model"] = str(a.model); m["model_provenance"] = model.get("provenance")
         title = "Frame-quality filter: held-out evaluation"
     m["source"] = prov; m["seconds"] = round(time.time() - t0, 1)
-    (out / "metrics.json").write_text(json.dumps(m, indent=1))
-    (out / "report.md").write_text(fq.report_md(m, title, prov))
+    (out / "metrics.json").write_text(json.dumps(m, indent=1), encoding="utf-8")
+    (out / "report.md").write_text(fq.report_md(m, title, prov), encoding="utf-8")
     fq.plot_confusion(m, out / "confusion.png", title + (" (synthetic)" if synthetic else ""))
     print(f"{a.action}: {m['n']} frames, accuracy {m['accuracy']:.3f}, macro F1 {m['macro_f1']:.3f} -> {out}")
 
 
 def main(argv=None):
     ap = argparse.ArgumentParser(prog="pebp", description="PEBP Designer demo")
+    from . import __version__
+    ap.add_argument("--version", action="version",
+                    version=f"PEBP Designer {__version__} (research use only, not for clinical use)")
     sub = ap.add_subparsers(dest="cmd", required=True)
 
     s = sub.add_parser("synth", help="make a synthetic neonatal cleft maxilla scan")

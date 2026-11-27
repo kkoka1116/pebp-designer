@@ -237,8 +237,8 @@ def export(case_dir: Path, profile: str = "prototype", params: PolyJetParams | N
                                     "volume_mm3": round(float(m.volume), 1), "color_hex": COLORS.get(name, "#999999")}
     (out / "assembly.3mf").write_bytes(scene.export(file_type="3mf"))
     manifest["validation"] = validate(bodies, union)
-    (out / "manifest.json").write_text(json.dumps(manifest, indent=2))
-    (out / "PRINT_NOTES.md").write_text(print_notes(manifest))
+    (out / "manifest.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
+    (out / "PRINT_NOTES.md").write_text(print_notes(manifest), encoding="utf-8")
     return out
 
 

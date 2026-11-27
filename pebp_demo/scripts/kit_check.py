@@ -44,7 +44,7 @@ def main():
     run("synth", "--preset", "prs", "--out", case, "--unoriented", "--asym", "1.0")
     run("design", case / "scan.stl", "--out", case)
     run("kit", case)
-    r = json.loads((case / "design.json").read_text())
+    r = json.loads((case / "design.json").read_text(encoding="utf-8"))
     kit = r["kit"]
     B = kit["batons"]
     check("15 kit batons registered", len(B) == 15 and [b["id"] for b in B] == [f"K{i}" for i in range(1, 16)], str(len(B)))
@@ -69,7 +69,7 @@ def main():
 
     # stock set: printable, and the same parts the case uses
     stock = case / "kit" / "stock"
-    man = json.loads((stock / "kit_stock_manifest.json").read_text())
+    man = json.loads((stock / "kit_stock_manifest.json").read_text(encoding="utf-8"))
     check("stock batons printable", all(b["watertight"] and b["bodies"] == 1 for b in man["batons"]), f"{len(man['batons'])} parts")
     by, zm = r["attachment"]["posterior_border_y"], r["attachment"]["z_mid"]
     worst = 0.0
@@ -86,19 +86,19 @@ def main():
     run("synth", "--no-cleft", "--out", case2, "--seed", "11")
     run("design", case2 / "scan.stl", "--out", case2)
     run("kit", case2, "--no-stock")
-    r2 = json.loads((case2 / "design.json").read_text())
+    r2 = json.loads((case2 / "design.json").read_text(encoding="utf-8"))
     f2 = [b["id"] for b in r2["kit"]["batons"] if b["qc"]["overall"] == "fail"]
     check("kit fits a second, no-cleft palate", not f2 and r2["kit"]["variant"] == "nocleft", f"variant {r2['kit']['variant']}, roof {r2['kit']['socket']['roof_min_mm']} mm; fails {f2}")
 
     # kit batons are ordinary devices
     check("kit batons in the airway metrics", all(b["id"] in r["tpp_metrics"] for b in B), "tpp_metrics has K1-K15")
     out = run("adjust", case / "design.json", "--from", "K8", "--bedside", "--mod", "shorten_mm=1", "--note", "kit check").stdout
-    r = json.loads((case / "design.json").read_text())
+    r = json.loads((case / "design.json").read_text(encoding="utf-8"))
     a1 = r["modification_log"][-1]
     check("bedside change of a kit baton", a1["from"] == "K8" and abs(a1["params"]["effective_length"] - (B[7]["params"]["effective_length"] - 1)) < 1e-6,
           out.strip().splitlines()[-1])
     out = run("mold", case, "--device", "K8").stdout
-    r = json.loads((case / "design.json").read_text())
+    r = json.loads((case / "design.json").read_text(encoding="utf-8"))
     c1 = r["cast_plates"][-1]
     check("chosen kit baton goes straight to the cast plate", c1["from"] == "K8" and c1["params"] == B[7]["params"] and "ok=True" in out,
           f"C{c1['n']} from {c1['from']}, wire {c1['wire']['start_mm_after_root']}-{c1['wire']['end_mm_before_tip']} mm")
@@ -107,15 +107,15 @@ def main():
     early = run("chairside", case, "--kit", "K8", ok=False)
     check("chairside needs the base first", early.returncode == 2 and "--base" in early.stderr, early.stderr.strip()[:90])
     out = run("chairside", case, "--base").stdout
-    r = json.loads((case / "design.json").read_text())
+    r = json.loads((case / "design.json").read_text(encoding="utf-8"))
     cb = r["chairside_base"]
-    tman = json.loads((case / cb["tooling"]["dir"] / "manifest.json").read_text())
+    tman = json.loads((case / cb["tooling"]["dir"] / "manifest.json").read_text(encoding="utf-8"))
     check("final base passes QC", cb["qc"]["overall"] == "pass", out.strip().splitlines()[0])
     check("final base tooling demolds", tman["validation"]["ok"] and [d["piece"] for d in tman["validation"]["demold"]]
           == ["tunnel_core", "counter_oral", "cast final base"], ", ".join(f"{d['piece']} {'free' if d['free'] else 'LOCKED'}" for d in tman["validation"]["demold"]))
     # visit 2: the chosen baton fixed into the worn plate, wire across the joint
     out = run("chairside", case, "--kit", "K8").stdout
-    r = json.loads((case / "design.json").read_text())
+    r = json.loads((case / "design.json").read_text(encoding="utf-8"))
     s1 = r["chairside_finals"][-1]
     q = {c["check"]: c for c in s1["qc"]["checks"]}
     check("chairside plate passes QC", s1["qc"]["overall"] == "pass", out.strip().splitlines()[0])
@@ -127,22 +127,22 @@ def main():
     check("chairside plate in the registry", s1["id"] in r["tpp_metrics"] and s1["params"] == B[7]["params"], f"{s1['id']} from {s1['from']}")
     run("chairside", case2, "--base")
     out = run("chairside", case2, "--kit", "K5").stdout
-    r2 = json.loads((case2 / "design.json").read_text())
+    r2 = json.loads((case2 / "design.json").read_text(encoding="utf-8"))
     check("chairside on the no-cleft palate", r2["chairside_finals"][-1]["qc"]["overall"] == "pass", out.strip().splitlines()[0])
 
     # no-cleft stock and the width rule
     run("kit", "--stock", OUT / "stock_nocleft", "--variant", "nocleft")
-    mn = json.loads((OUT / "stock_nocleft" / "kit_stock_manifest.json").read_text())
+    mn = json.loads((OUT / "stock_nocleft" / "kit_stock_manifest.json").read_text(encoding="utf-8"))
     check("no-cleft stock set", all(b["watertight"] and b["bodies"] == 1 for b in mn["batons"]), f"{len(mn['batons'])} parts")
     bad = run("kit", case, "--width", "5.0", ok=False)
     st = run("chairside", "--stock-tooling", OUT / "cs_stock", "--only", "K1,K5,K15").stdout
-    sm = json.loads((OUT / "cs_stock" / "stock_tooling_manifest.json").read_text())
+    sm = json.loads((OUT / "cs_stock" / "stock_tooling_manifest.json").read_text(encoding="utf-8"))
     check("stock final-baton molds demold", len(sm["batons"]) == 3 and all(b["ok"] for b in sm["batons"]),
           ", ".join(f"{b['id']} {'ok' if b['ok'] else 'FAILED'}" for b in sm["batons"]))
-    k15 = json.loads((OUT / "cs_stock" / "K15" / "manifest.json").read_text())["validation"]
+    k15 = json.loads((OUT / "cs_stock" / "K15" / "manifest.json").read_text(encoding="utf-8"))["validation"]
     check("mold pins clear of the wire", k15["pins_clear_of_wire_mm3"] <= 0.05, f"{k15['pins_clear_of_wire_mm3']} mm3 (K15)")
     bench = run("bench", OUT / "bench", ok=False)
-    bm = json.loads((OUT / "bench" / "bench_manifest.json").read_text()) if (OUT / "bench" / "bench_manifest.json").exists() else {}
+    bm = json.loads((OUT / "bench" / "bench_manifest.json").read_text(encoding="utf-8")) if (OUT / "bench" / "bench_manifest.json").exists() else {}
     check("bench specimens and their tooling", bench.returncode == 0 and bm.get("ok") and len(bm["tests"]) == 8,
           ", ".join(k for k, v in bm.get("validation", {}).items() if not v) or f"{len(bm.get('files', {}))} files, 8 tests")
     # every modular version for this patient (catalog.py), narrowed by choices
@@ -160,7 +160,7 @@ def main():
     check("narrowing to one version", n1["count"] == 1 and n1["versions"][0]["id"] == "N-GR-K6", str([v["id"] for v in n1["versions"]]))
     vw = run("catalog", case, "--viewer", ok=False)
     vf = case / "catalog" / "catalog_viewer.html"
-    vt = vf.read_text() if vf.exists() else ""
+    vt = vf.read_text(encoding="utf-8") if vf.exists() else ""
     vd = json.loads(vt.split("const D = ", 1)[1].split(";\n", 1)[0]) if "const D = " in vt else {}
     check("offline catalog viewer: every version and mesh embedded, no network loads",
           vw.returncode == 0 and len(vd.get("versions", [])) == 120 and "scan" in vd.get("meshes", {})
@@ -179,7 +179,7 @@ def main():
           f"drop {d4} mm, roof {i4['roof_min_mm']} mm (no drop needed on the synthetic palate at 1 mm)")
     mk = run("catalog", case, "--make", "N-GR-K8", ok=False)
     mj = case / "catalog" / "make" / "N-GR-K8" / "make.json"
-    mp = json.loads(mj.read_text()) if mj.exists() else {}
+    mp = json.loads(mj.read_text(encoding="utf-8")) if mj.exists() else {}
     check("manufacturing plan for a chosen version: design, kit, visit-1 base + tooling, visit-2 baton, stock tooling, one-piece mold",
           mk.returncode == 0 and mp.get("ok") and len(mp.get("steps", [])) == 6 and (mj.parent / "PLAN.md").exists()
           and mp.get("cleft_type") == "none" and mp.get("plate_profile") == "graded" and mp.get("border_relief") is True,
