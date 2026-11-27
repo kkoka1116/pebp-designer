@@ -86,7 +86,7 @@ def _build_one(g: dict, ep: ExtensionParams, number: int, mode: str, kind: str, 
     if groove and path is not None:
         mesh, wire = cut_wire_groove(mesh, path, ep, g["border_y"])
     qc = qc_prototype(mesh, path, ep, g["pp"], g["outline"], g["lm_json"], kind=kind, reference=reference, wire=wire,
-                      root=root_span(ext, g["border_y"], g["z_mid"], ep.lateral_offset), support=g["hfb"])
+                      root=root_span(ext, g["border_y"], g["z_mid"], ep.lateral_offset), support=g["hfb"], as_written=True)
     tip = tip_point(mesh, path) if path is not None else np.array(info["tip"])
     return {"mesh": mesh, "path": path, "qc": qc, "info": info, "wire": wire, "tip": tip}
 

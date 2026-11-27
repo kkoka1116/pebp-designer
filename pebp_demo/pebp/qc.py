@@ -13,7 +13,7 @@ from shapely.geometry import Polygon, box
 from shapely.ops import unary_union
 
 from .extension import ExtensionParams
-from .meshutil import arclength, tip_arclength
+from .meshutil import arclength, reloads_watertight, tip_arclength
 from .plate import PlateParams
 
 STANDARD_REVIEW_MM = 4.0    # project heuristic, not a published limit: two prototype steps away from the standard
@@ -158,13 +158,15 @@ def scan_support_check(plate_outline: np.ndarray, hfb, border_y: float) -> dict:
 def qc_prototype(mesh: trimesh.Trimesh, path, ep: ExtensionParams, pp: PlateParams,
                  plate_outline: np.ndarray, lm_json: dict, kind: str = "prototype",
                  reference: dict | None = None, wire: dict | None = None, root: dict | None = None,
-                 support=None) -> dict:
+                 support=None, as_written: bool = False) -> dict:
     """reference: {'params': ExtensionParams dict of the standard design, 'arm_length_mm': float}
     wire: measured wire or groove {'start_mm_after_root', 'end_mm_before_tip'} for a final device.
     root: where the baton crosses the border, from root_span(); adds the 'baton root supported' check.
-    support: the blocked height field the plate was built on; adds the 'plate on scanned surface' check."""
+    support: the blocked height field the plate was built on; adds the 'plate on scanned surface' check.
+    as_written: the mesh is saved as an STL device file; it must also be watertight after a round trip."""
     checks = []
-    checks.append(_check("mesh watertight", mesh.is_watertight, bool(mesh.is_watertight), "single closed solid for printing"))
+    wt = reloads_watertight(mesh) if as_written else bool(mesh.is_watertight)
+    checks.append(_check("mesh watertight", wt, wt, "single closed solid for printing" + (", also as written to STL and read back" if as_written else "")))
     checks.append(_check("single body", mesh.body_count == 1, int(mesh.body_count), "plate and extension fused"))
     checks.append(_check("extension thickness", ep.thickness >= 3.0, round(ep.thickness, 2), ">= 3.0 mm (Tübingen: never below 3 mm)"))
     ref_w = reference["params"]["width_base"] if reference else ep.width_base

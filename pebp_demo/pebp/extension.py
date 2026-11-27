@@ -7,7 +7,7 @@ from pathlib import Path
 import numpy as np
 import trimesh
 
-from .meshutil import sweep_tube, path_frames, boolean_union, boolean_difference, manifold_boolean
+from .meshutil import CUTTER_CLEARANCE_MM, sweep_tube, path_frames, boolean_union, boolean_difference, manifold_boolean
 
 
 @dataclass
@@ -87,9 +87,10 @@ def build_extension(p: ExtensionParams, border_y: float, z_mid: float) -> tuple[
 
 
 def marker_centres(mesh: trimesh.Trimesh, path: np.ndarray, number: int, p: ExtensionParams,
-                   border_y: float) -> list[np.ndarray]:
+                   border_y: float, lift: float = 0.0) -> list[np.ndarray]:
     """Points on the inferior (tongue-side) face of the cleft section, one per prototype number.
-    Found on the actual surface, so they work for the published STL as well as the parametric baton."""
+    Found on the actual surface, so they work for the published STL as well as the parametric baton.
+    `lift` moves each point that far out of the surface, along the direction it was found in."""
     from .meshutil import surface_point
     T, nv = path_frames(path)
     out = []
@@ -97,7 +98,8 @@ def marker_centres(mesh: trimesh.Trimesh, path: np.ndarray, number: int, p: Exte
         y = border_y + p.ap_offset - 3.0 - 2.2 * k
         i = int(np.argmin(np.abs(path[:, 1] - y)))
         sp = surface_point(mesh, path[i], T[i], -nv[i])
-        out.append(sp if sp is not None else path[i] - nv[i] * (p.thickness / 2.0))
+        sp = sp if sp is not None else path[i] - nv[i] * (p.thickness / 2.0)
+        out.append(sp - lift * nv[i])
     return out
 
 
@@ -105,8 +107,8 @@ def engrave_number(mesh: trimesh.Trimesh, path: np.ndarray, number: int, p: Exte
                    border_y: float) -> trimesh.Trimesh:
     """Engrave `number` dimples on the inferior face of the cleft section (visible under endoscopy)."""
     out = mesh
-    for centre in marker_centres(mesh, path, number, p, border_y):
-        sph = trimesh.creation.icosphere(subdivisions=2, radius=0.8)
+    for centre in marker_centres(mesh, path, number, p, border_y, lift=CUTTER_CLEARANCE_MM):
+        sph = trimesh.creation.icosphere(subdivisions=2, radius=0.8 + CUTTER_CLEARANCE_MM)   # still 0.8 mm deep
         sph.apply_translation(centre)
         out = boolean_difference(out, sph)
     return out
@@ -132,15 +134,17 @@ def cut_wire_groove(mesh: trimesh.Trimesh, path: np.ndarray, p: ExtensionParams,
     past = st > s[-1]                                   # the actual tip can sit a little past the centreline's end
     pts[past] = path[-1] + (st[past] - s[-1])[:, None] * t_end
     T, N = path_frames(pts)
-    g, d = [], []
+    g, d, up = [], [], []
     for c, t, n in zip(pts, T, N):
         outer = surface_point(mesh, c, t, n)
         inner = surface_point(mesh, c, t, -n)
         if outer is None or inner is None:
             continue
-        g.append(outer); d.append(min(depth, 0.45 * float(np.linalg.norm(outer - inner))))
-    g, d = np.array(g), np.array(d)
-    cutter = sweep_tube(g, np.full(len(g), width), 2 * d, n_round=2)
+        g.append(outer); d.append(min(depth, 0.45 * float(np.linalg.norm(outer - inner)))); up.append(n)
+    g, d, up = np.array(g), np.array(d), np.array(up)
+    # lifted off the surface (CUTTER_CLEARANCE_MM), the floor still at depth d
+    e = CUTTER_CLEARANCE_MM
+    cutter = sweep_tube(g + e * up, np.full(len(g), width), 2 * (d + e), n_round=2)
     info = {"depth_mm": [round(float(d.min()), 2), round(float(d.max()), 2)], "width_mm": width,
             "start_mm_after_root": round(float(st[0] - s_root), 2),
             "end_mm_before_tip": round(float(s_tip - st[-1]), 2), "length_mm": round(float(st[-1] - st[0]), 1)}

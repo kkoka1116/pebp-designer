@@ -354,6 +354,28 @@ def main():
           and r0["plate"]["params"]["posterior_bulge"] == 2.0,
           f"{rh['extension_mode']}, cleft floor z {rh['plate']['cleft_floor_z']}")
 
+    # no-cleft devices reload watertight: the flat no-cleft extension used to pinch under the number dimples
+    # and the wire groove, so the files were broken while the in-memory QC said pass. Seed 0 hit both.
+    from pebp.meshutil import reloads_watertight
+    nc = OUT / "nocleft"
+    run("synth", "--out", nc, "--no-cleft", "--seed", 0)
+    run("design", nc / "scan.stl", "--out", nc / "d", "--final")
+    rnc = json.loads((nc / "d" / "design.json").read_text())
+    files = ["base_plate.stl", "final_design.stl"] + [p["file"] for p in rnc["prototypes"]]
+    back = {f: trimesh.load(nc / "d" / f) for f in files}
+    bad = [f for f, m in back.items() if not (m.is_watertight and m.body_count == 1)]
+    check("no-cleft devices reload from STL as one closed solid",
+          rnc["extension_mode"] == "tuebingen-nocleft" and not bad and len(files) == 5
+          and all(q["qc"]["overall"] == "pass" for q in rnc["prototypes"] + [rnc["final_design"]]),
+          f"{rnc['extension_mode']}, {len(files) - len(bad)}/{len(files)} files watertight after reload" + (f", broken {bad}" if bad else ""))
+    # and QC can see the defect: two cubes sharing an edge through duplicated vertices are watertight in
+    # memory and not after an STL round trip
+    a = trimesh.creation.box(extents=(1, 1, 1)); b = a.copy(); b.apply_translation((1, 1, 0))
+    pinched = trimesh.Trimesh(np.vstack([a.vertices, b.vertices]), np.vstack([a.faces, b.faces + len(a.vertices)]), process=False)
+    check("QC watertight check reads the mesh as written to STL",
+          pinched.is_watertight and not reloads_watertight(pinched) and reloads_watertight(a),
+          f"in memory {pinched.is_watertight}, after reload {reloads_watertight(pinched)}")
+
     # orientation on scan-like palates (ragged rim, hole, wider than deep): scripts/orient_check.py
     sys.path.insert(0, str(ROOT / "scripts"))
     from orient_check import checks as orient_checks
