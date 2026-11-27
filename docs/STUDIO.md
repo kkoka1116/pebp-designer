@@ -9,7 +9,11 @@ cd pebp_demo
 .venv/bin/python scripts/studio_check.py        # the server's rules on synthetic data: 25 checks, +2 with --mold, +11 for the kit route when `pebp kit` exists
 ```
 
-## The desktop app (macOS)
+## The download
+
+The [Releases page](https://github.com/kkoka1116/pebp-designer/releases) has PEBP Studio frozen with its own Python for macOS and Windows (`pebp_demo/packaging/`, built and smoke-tested by `.github/workflows/release.yml`). On macOS it opens in its own window; on Windows it opens in the browser, with a console window that stops it when closed. Its starter folder is the one described below, except that on Windows it is `PEBP Studio` in the user folder, since Windows Desktops often sync to OneDrive. Install steps: [INSTALL.md](INSTALL.md).
+
+## The desktop app from source (macOS)
 
 The same studio also runs in its own window, as a Mac app, instead of a browser tab:
 

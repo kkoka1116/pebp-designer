@@ -26,12 +26,13 @@ import sys
 from pathlib import Path
 
 from . import record as rec
+from .runtime import pebp_command, work_dir
 
 GROUP_CLEFT = {"C": "hard-soft", "N": "none"}
 
 
 def _run(args: list[str], cwd: Path) -> subprocess.CompletedProcess:
-    return subprocess.run([sys.executable, "-m", "pebp", *args], cwd=cwd, capture_output=True, text=True)
+    return subprocess.run([*pebp_command(), *args], cwd=cwd, capture_output=True, text=True)
 
 
 def make(case_dir: Path, cat: dict, version_id: str, log=print) -> dict:
@@ -49,7 +50,7 @@ def make(case_dir: Path, cat: dict, version_id: str, log=print) -> dict:
     pp = record["plate"]["params"]
     out = case_dir / "catalog" / "make" / version_id
     out.mkdir(parents=True, exist_ok=True)
-    pkg_root = Path(__file__).resolve().parents[1]
+    pkg_root = work_dir()
     steps_log = []
 
     def step(name, ok, detail=""):

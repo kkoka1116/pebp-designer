@@ -1022,6 +1022,9 @@ def cmd_frames(a):
 
 def main(argv=None):
     ap = argparse.ArgumentParser(prog="pebp", description="PEBP Designer demo")
+    from . import __version__
+    ap.add_argument("--version", action="version",
+                    version=f"PEBP Designer {__version__} (research use only, not for clinical use)")
     sub = ap.add_subparsers(dest="cmd", required=True)
 
     s = sub.add_parser("synth", help="make a synthetic neonatal cleft maxilla scan")

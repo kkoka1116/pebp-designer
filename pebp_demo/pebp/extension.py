@@ -7,6 +7,7 @@ from pathlib import Path
 import numpy as np
 import trimesh
 
+from .runtime import REPO_ROOT
 from .meshutil import CUTTER_CLEARANCE_MM, sweep_tube, path_frames, boolean_union, boolean_difference, manifold_boolean
 
 
@@ -155,7 +156,7 @@ TUEBINGEN_VARIANTS = {
     "cleft": "Tuebingen_Standard_TPP_velopharyngeal_extension_CleftPatient.stl",
     "nocleft": "Tuebingen_Standard_TPP_velopharyngeal_extension_NoCleftPatient.stl",
 }
-TUEBINGEN_DIR = Path(__file__).resolve().parents[2] / "external" / "tuebingen_supplement" / "s001"
+TUEBINGEN_DIR = REPO_ROOT / "external" / "tuebingen_supplement" / "s001"
 TUEBINGEN_CITATION = ("Aretxabaleta M. et al., Bioengineering 2025;12(10):1063, doi:10.3390/bioengineering12101063, "
                       "supplementary file bioengineering-12-01063-s001.zip (CC BY 4.0)")
 

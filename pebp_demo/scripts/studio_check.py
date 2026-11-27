@@ -1,6 +1,7 @@
 """Checks of PEBP Studio's local server on synthetic data only.
 
     .venv/bin/python scripts/studio_check.py           (about 30 s; --mold adds the mold build, about a minute more)
+    .venv/bin/python scripts/studio_check.py --exe "dist/PEBP Studio/pebp-studio"   (the same, against the download)
 
 Starts the server on a free port of 127.0.0.1, walks a synthetic case through the steps over HTTP the way
 the browser does, and asserts the rules the UI is there to keep: the server answers only this computer
@@ -138,9 +139,28 @@ def kit_route(c: "Client", ws: Path) -> None:
 def main():
     do_mold = "--mold" in sys.argv
     ws = Path(tempfile.mkdtemp(prefix="pebp_studio_"))
-    httpd = make_server(ws, 0)
-    port = httpd.server_address[1]
-    threading.Thread(target=httpd.serve_forever, daemon=True).start()
+    exe = sys.argv[sys.argv.index("--exe") + 1] if "--exe" in sys.argv else None
+    if exe:
+        # the downloadable app (packaging/build.py): the same checks against its own server and build steps
+        import socket
+        import subprocess
+        with socket.socket() as s:
+            s.bind(("127.0.0.1", 0))
+            port = s.getsockname()[1]
+        proc = subprocess.Popen([exe, "studio", "--workspace", str(ws), "--port", str(port), "--no-browser"],
+                                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        httpd = type("Frozen", (), {"server_address": ("127.0.0.1", port),
+                                    "shutdown": lambda self: (proc.terminate(), proc.wait(10))})()
+        for _ in range(60):
+            try:
+                urllib.request.urlopen(f"http://127.0.0.1:{port}/", timeout=2)
+                break
+            except OSError:
+                time.sleep(1)
+    else:
+        httpd = make_server(ws, 0)
+        port = httpd.server_address[1]
+        threading.Thread(target=httpd.serve_forever, daemon=True).start()
     c = Client(port)
     try:
         # the server answers only this computer, and only requests its own page can make

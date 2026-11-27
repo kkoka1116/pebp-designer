@@ -35,7 +35,9 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, unquote, urlparse
 
-PKG_ROOT = Path(__file__).resolve().parents[2]          # pebp_demo/
+from .. import __version__
+from ..runtime import pebp_command, work_dir
+
 STATIC = Path(__file__).resolve().parent / "static"
 STEPS = ["case", "landmarks", "plate", "changes", "checks", "mold"]          # one-piece cast plate (default)
 KIT_STEPS = ["case", "landmarks", "plate", "kit", "visit2"]                    # two-visit chairside route
@@ -451,7 +453,7 @@ class Case:
 # ------------------------------------------------------------------ jobs
 
 def _run_pebp(args: list[str]) -> tuple[int, str, str]:
-    p = subprocess.run([sys.executable, "-m", "pebp", *map(str, args)], cwd=PKG_ROOT, capture_output=True, text=True)
+    p = subprocess.run([*pebp_command(), *map(str, args)], cwd=work_dir(), capture_output=True, text=True)
     return p.returncode, p.stdout, p.stderr
 
 
@@ -1126,7 +1128,10 @@ class Handler(BaseHTTPRequestHandler):
             ctype += "; charset=utf-8"
         extra = {"Content-Security-Policy": "default-src 'self'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; "
                                             "script-src 'self'; frame-src 'self'; connect-src 'self'"} if p.suffix == ".html" else None
-        self._send(200, p.read_bytes(), ctype, extra)
+        body = p.read_bytes()
+        if p.name == "index.html":
+            body = body.replace(b"__PEBP_VERSION__", __version__.encode())
+        self._send(200, body, ctype, extra)
 
     def _case_file(self, name: str, rel: str, download: bool):
         d = self.ws.case_dir(name)
