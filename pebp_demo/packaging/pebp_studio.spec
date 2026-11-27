@@ -39,8 +39,10 @@ a = Analysis(
 pyz = PYZ(a.pure)
 
 icon = HERE / "build" / ("PEBP Studio.icns" if sys.platform == "darwin" else "PEBP Studio.ico")
+# UTF-8 mode: pebp writes its reports and records with the platform default encoding, which on Windows is
+# cp1252 and cannot hold the Greek letters and arrows in them. UTF-8 mode makes the default UTF-8 everywhere.
 exe = EXE(
-    pyz, a.scripts, [],
+    pyz, a.scripts, [("X utf8_mode=1", None, "OPTION")],
     exclude_binaries=True,
     name="PEBP Studio" if sys.platform != "linux" else "pebp-studio",
     console=sys.platform != "darwin",       # Windows/Linux: the console window is the "close me to stop" handle

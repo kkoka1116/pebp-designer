@@ -56,7 +56,7 @@ Real intraoral scans and everything made from them are patient data. Keep the st
 
 ## Running from source instead
 
-Developers can run the same app from a checkout with Python 3.12; see the README. `python -m pebp studio` opens it in the browser.
+Developers can run the same app from a checkout with Python 3.12; see the README. `python -m pebp studio` opens it in the browser. On Windows, set `PYTHONUTF8=1` first (the download does this itself), or writing some reports fails with a `UnicodeEncodeError`.
 
 ## Updating and removing
 

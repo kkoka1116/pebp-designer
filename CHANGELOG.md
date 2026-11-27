@@ -15,6 +15,7 @@ The first numbered release, and the first with downloads.
 
 ### Fixed
 
+- On Windows, writing the airway report and other files with Greek letters or arrows failed (cp1252 default encoding). The download runs in Python's UTF-8 mode.
 - Device STLs that were closed solids in memory but not after being written and read back. Cutters that lay exactly along a surface (the number dimples and wire groove on the flat faces of the no-cleft extension, and the tissue clip along the fitting surface) left pinched meshes. The cutters now stand 0.05 mm (dimples, groove) or 5 µm (tissue clip) off the surface, and QC checks the STL round trip for every written device.
 
 ### Included from the first public code drop
