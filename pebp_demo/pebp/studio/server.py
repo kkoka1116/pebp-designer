@@ -36,7 +36,7 @@ from pathlib import Path
 from urllib.parse import parse_qs, unquote, urlparse
 
 from .. import __version__
-from ..runtime import pebp_command, work_dir
+from ..runtime import child_env, pebp_command, work_dir
 
 STATIC = Path(__file__).resolve().parent / "static"
 STEPS = ["case", "landmarks", "plate", "changes", "checks", "mold"]          # one-piece cast plate (default)
@@ -116,19 +116,19 @@ class Workspace:
 
 def _read_json(p: Path):
     try:
-        return json.loads(p.read_text())
+        return json.loads(p.read_text(encoding="utf-8"))
     except (OSError, ValueError):
         return None
 
 
 def _write_json(p: Path, obj) -> None:
     tmp = p.with_suffix(p.suffix + ".tmp")
-    tmp.write_text(json.dumps(obj, indent=2))
+    tmp.write_text(json.dumps(obj, indent=2), encoding="utf-8")
     tmp.replace(p)
 
 
 def _log(case_dir: Path, entry: dict) -> None:
-    with open(case_dir / "studio_log.jsonl", "a") as f:
+    with open(case_dir / "studio_log.jsonl", "a", encoding="utf-8") as f:
         f.write(json.dumps(entry) + "\n")
 
 
@@ -453,7 +453,8 @@ class Case:
 # ------------------------------------------------------------------ jobs
 
 def _run_pebp(args: list[str]) -> tuple[int, str, str]:
-    p = subprocess.run([*pebp_command(), *map(str, args)], cwd=work_dir(), capture_output=True, text=True)
+    p = subprocess.run([*pebp_command(), *map(str, args)], cwd=work_dir(), capture_output=True, text=True, encoding="utf-8", errors="replace",
+                       env=child_env())
     return p.returncode, p.stdout, p.stderr
 
 

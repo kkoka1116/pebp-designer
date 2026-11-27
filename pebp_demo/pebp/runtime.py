@@ -7,6 +7,7 @@ subprocess, or reads a file shipped beside the code, asks this module instead of
 """
 from __future__ import annotations
 
+import os
 import sys
 from pathlib import Path
 
@@ -26,3 +27,8 @@ def pebp_command() -> list[str]:
 def work_dir() -> Path:
     """The working directory for those subprocesses (the bundle may sit on a read-only volume)."""
     return Path.home() if FROZEN else PKG_ROOT
+
+
+def child_env() -> dict[str, str]:
+    """Environment for those subprocesses: their output is read back as UTF-8 (Windows defaults to cp1252)."""
+    return {**os.environ, "PYTHONIOENCODING": "utf-8", "PYTHONUTF8": "1"}

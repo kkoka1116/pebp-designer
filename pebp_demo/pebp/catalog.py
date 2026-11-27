@@ -169,7 +169,7 @@ def build(case_dir: Path, cp: CatalogParams | None = None, log=print) -> dict:
            "entered_cleft_type": entered, "kit_params": asdict(kp0), "bases": bases, "batons": baton_list,
            "versions": versions, "counts": {"bases": len(bases), "batons": len(baton_list), "versions": len(versions)},
            "time": rec.now()}
-    (out / "catalog.json").write_text(json.dumps(cat, indent=1, default=str))
+    (out / "catalog.json").write_text(json.dumps(cat, indent=1, default=str), encoding="utf-8")
     record["catalog"] = {"file": "catalog/catalog.json", "sha256": rec.file_sha256(out / "catalog.json"), "flag": LABEL,
                          "counts": cat["counts"], "time": cat["time"]}
     rec.save(record, case_dir / "design.json")
@@ -178,7 +178,7 @@ def build(case_dir: Path, cp: CatalogParams | None = None, log=print) -> dict:
 
 def load(case_dir: Path) -> dict | None:
     p = Path(case_dir) / "catalog" / "catalog.json"
-    return json.loads(p.read_text()) if p.exists() else None
+    return json.loads(p.read_text(encoding="utf-8")) if p.exists() else None
 
 
 def _as_bool(v):

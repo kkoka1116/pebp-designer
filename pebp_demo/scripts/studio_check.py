@@ -236,8 +236,8 @@ def main():
         code, j = c.req(f"/api/case/{case}/settings", {"tip_target": "in_vallecula", "by": ""})
         check("clinical choice needs a name", code == 400, j.get("error", ""))
         c.req(f"/api/case/{case}/settings", {"tip_target": "in_vallecula", "by": "T"})
-        rec = json.loads((ws / case / "design.json").read_text())
-        rv = json.loads((ws / case / "review.json").read_text())
+        rec = json.loads((ws / case / "design.json").read_text(encoding="utf-8"))
+        rv = json.loads((ws / case / "review.json").read_text(encoding="utf-8"))
         check("tip target stored in the record with who set it", rec["clinical_settings"]["tip_target"] == "in_vallecula"
               and any(e.get("tip_target") == "in_vallecula" and e["by"] == "T" for e in rv["log"]))
 
@@ -250,7 +250,7 @@ def main():
         code, j = c.req(f"/api/case/{case}/review", {"step": "changes", "by": "T"})
         check("STOP finding holds the approval", code == 409 and "STOP" in j.get("error", ""), j.get("error", ""))
         code, _ = c.req(f"/api/case/{case}/review", {"step": "changes", "by": "T", "override": True})
-        rv = json.loads((ws / case / "review.json").read_text())
+        rv = json.loads((ws / case / "review.json").read_text(encoding="utf-8"))
         check("approve anyway is recorded with the findings it overrode",
               code == 200 and rv["steps"]["changes"]["override"] and "A1" in rv["steps"]["changes"]["override"][0])
         c.req(f"/api/case/{case}/review", {"step": "changes", "action": "withdraw", "by": "T"})

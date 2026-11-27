@@ -109,7 +109,7 @@ def main():
     fig.suptitle("Final base plate before (uniform, Tübingen 2.5 mm) and after (graded, project heuristic). "
                  "Red outlines: zones held at full thickness (baton root, cleft, bow-wire tags). Synthetic palates only.", fontsize=11)
     fig.savefig(OUT / "graded_compare.png", dpi=110)
-    (OUT / "graded_compare.json").write_text(json.dumps(rows, indent=2))
+    (OUT / "graded_compare.json").write_text(json.dumps(rows, indent=2), encoding="utf-8")
     for r in rows:
         print(f"{r['case']}: volume {r['uniform_volume_mm3']} -> {r['graded_volume_mm3']} mm3 (-{r['volume_saved_pct']}%), "
               f"mean wall {r['graded_mean_thickness_mm']} mm, at thin {r['area_mm2']['at_thin']} of {r['area_mm2']['total']} mm2, "

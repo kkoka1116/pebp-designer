@@ -207,7 +207,7 @@ def write_synthetic_set(out: Path, n_per_class: int, seed: int = 0, short_names:
             a = (synthetic_frame(cls, rng) * 255).round().astype(np.uint8)
             Image.fromarray(a).save(d / f"vid{k // 10:02d}_{k:04d}.png")
         counts[cls] = n_per_class
-    (Path(out) / "SYNTHETIC.txt").write_text("Synthetic frames for testing the frame-quality code only. Not endoscopy.\n")
+    (Path(out) / "SYNTHETIC.txt").write_text("Synthetic frames for testing the frame-quality code only. Not endoscopy.\n", encoding="utf-8")
     return counts
 
 
@@ -281,11 +281,11 @@ def predict_proba(model: dict, X: np.ndarray) -> np.ndarray:
 
 
 def save_model(model: dict, path: Path):
-    Path(path).write_text(json.dumps(model, indent=1))
+    Path(path).write_text(json.dumps(model, indent=1), encoding="utf-8")
 
 
 def load_model(path: Path) -> dict:
-    m = json.loads(Path(path).read_text())
+    m = json.loads(Path(path).read_text(encoding="utf-8"))
     if m.get("kind") != "pebp.framequality.logreg":
         raise ValueError(f"{path} is not a frame-quality model")
     return m
@@ -470,7 +470,7 @@ def fetch_zenodo(dest: Path, record: str = ZENODO_RECORD, api_url: str | None = 
         "license": lic_id, "files": files_out, "fetched_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "commercial_use_ok": not any(t in lic_id.lower() for t in ("nc", "nd")) and lic_id.lower().startswith("cc-by"),
     }
-    (dest / "SOURCE.json").write_text(json.dumps(src, indent=1))
+    (dest / "SOURCE.json").write_text(json.dumps(src, indent=1), encoding="utf-8")
     return src
 
 
@@ -480,7 +480,7 @@ def classify_paths(model: dict, paths, out_csv: Path, threshold: float | None = 
     thr = model.get("keep_threshold", 0.5) if threshold is None else threshold
     X = feature_matrix(paths, model.get("image_size", SIZE))
     P = predict_proba(model, X) if len(paths) else np.zeros((0, len(CLASSES)))
-    with open(out_csv, "w", newline="") as fh:
+    with open(out_csv, "w", newline="", encoding="utf-8") as fh:
         w = csv.writer(fh)
         w.writerow(["path", "label", "keep", *[f"p_{c}" for c in CLASSES]])
         for p, row in zip(paths, P):

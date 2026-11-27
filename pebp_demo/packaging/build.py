@@ -61,7 +61,7 @@ def frozen_exe() -> Path:
 
 def run(cmd, **kw) -> str:
     print("$", " ".join(map(str, cmd)), flush=True)
-    p = subprocess.run(list(map(str, cmd)), capture_output=True, text=True, **kw)
+    p = subprocess.run(list(map(str, cmd)), capture_output=True, text=True, encoding="utf-8", errors="replace", **kw)
     if p.returncode != 0:
         print(p.stdout[-4000:], p.stderr[-4000:], sep="\n")
         raise SystemExit(f"failed ({p.returncode}): {cmd[1:3]}")
@@ -76,7 +76,7 @@ def smoke_test() -> None:
         td = Path(td)
         run([exe, "synth", "--out", td / "case", "--preset", "prs"])
         run([exe, "design", td / "case" / "scan.stl", "--out", td / "case"])
-        rec = json.loads((td / "case" / "design.json").read_text())
+        rec = json.loads((td / "case" / "design.json").read_text(encoding="utf-8"))
         ext = json.dumps(rec)
         assert "bioengineering12101063" in ext, "the published Tübingen extension did not load from the bundle"
         devices = sorted(p.name for p in (td / "case").glob("*.stl"))

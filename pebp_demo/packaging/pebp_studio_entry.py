@@ -55,6 +55,11 @@ def launch() -> int:
 
 def main() -> int:
     multiprocessing.freeze_support()
+    for stream in (sys.stdout, sys.stderr):         # the studio reads its build steps' output as UTF-8
+        try:
+            stream.reconfigure(encoding="utf-8", errors="replace")
+        except (AttributeError, ValueError):
+            pass
     args = [a for a in sys.argv[1:] if not a.startswith("-psn_")]   # old macOS Finder launches add -psn_…
     if args:
         from pebp.cli import main as cli

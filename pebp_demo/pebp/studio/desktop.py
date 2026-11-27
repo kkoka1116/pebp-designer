@@ -163,7 +163,7 @@ def install_app(dest: Path, workspace: Path) -> Path:
         'mkdir -p "$(dirname "$LOG")"\n'
         'cd "$PEBP" || { osascript -e "display alert \\"PEBP Studio\\" message \\"The pebp_demo folder has moved: $PEBP\\""; exit 1; }\n'
         'echo "--- $(date) ---" >> "$LOG"\n'
-        'exec "$PEBP/.venv/bin/python" -m pebp app --workspace "$WORKSPACE" >> "$LOG" 2>&1\n')
+        'exec "$PEBP/.venv/bin/python" -m pebp app --workspace "$WORKSPACE" >> "$LOG" 2>&1\n', encoding="utf-8")
     launcher.chmod(0o755)
 
     info = {
@@ -213,12 +213,12 @@ def make_starter(home: Path, app: Path | None = None) -> Path:
     (samples / "ABOUT THESE SCANS.txt").write_text(
         "These two scans are synthetic. They are made by `pebp synth` from published neonatal palate\n"
         "measurements (Willershausen 2024) and rotated at random, like a raw intraoral scan.\n"
-        "They are not from any patient, so they are safe to share. Use them to learn the app.\n")
+        "They are not from any patient, so they are safe to share. Use them to learn the app.\n", encoding="utf-8")
     (home / "Scans to design" / "READ ME.txt").write_text(
         "Put a real intraoral scan (STL) here before you add it in PEBP Studio.\n\n"
         "Real scans are patient data. They stay on this computer: do not email, upload, sync or paste\n"
         "them anywhere, and do not put this folder in iCloud Drive, Dropbox or OneDrive.\n"
-        "When you add a scan in the app it is copied into the case's folder under Cases/.\n")
+        "When you add a scan in the app it is copied into the case's folder under Cases/.\n", encoding="utf-8")
     if app is not None:
         link = home / f"{APP_NAME}.app"
         if link.is_symlink() or link.exists():

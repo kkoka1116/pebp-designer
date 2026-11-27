@@ -240,18 +240,18 @@ def run(p: dict, with_fallback: bool = False) -> dict:
         if route == "mold":
             from .mold import build, MoldParams
             out = build(case_dir, MoldParams(device=p["device"]))
-            m = json.loads((out / "mold_manifest.json").read_text())
+            m = json.loads((out / "mold_manifest.json").read_text(encoding="utf-8"))
             built.append({"route": route, "dir": str(out), "ok": m["validation"]["ok"], "registered_as": m.get("registered_as")})
         elif route.startswith("print-"):
             from .directprint import build, PrintParams
             out = build(case_dir, PrintParams(route=route.split("-")[1], device=p["device"]))
-            m = json.loads((out / "print_manifest.json").read_text())
+            m = json.loads((out / "print_manifest.json").read_text(encoding="utf-8"))
             built.append({"route": route, "dir": str(out), "ok": m["validation"]["ok"], "registered_as": m.get("registered_as")})
         elif route == "polyjet":
             from .polyjet import export
             for n in (1, 2, 3):
                 out = export(case_dir, proto_number=n)
-                m = json.loads((out / "manifest.json").read_text())
+                m = json.loads((out / "manifest.json").read_text(encoding="utf-8"))
                 built.append({"route": route, "dir": str(out), "ok": m["validation"]["ok"], "registered_as": None})
         elif route == "prototypes":
             files = [f for f in (f"prototype_{n}.stl" for n in (1, 2, 3)) if (case_dir / f).exists()]
@@ -276,8 +276,8 @@ def write(p: dict) -> Path:
     case_dir = Path(p["case"])
     out = case_dir / "make" / p["stage"]
     out.mkdir(parents=True, exist_ok=True)
-    (out / "make_plan.json").write_text(json.dumps(p, indent=2))
-    (out / "MAKE_PLAN.md").write_text(markdown(p))
+    (out / "make_plan.json").write_text(json.dumps(p, indent=2), encoding="utf-8")
+    (out / "MAKE_PLAN.md").write_text(markdown(p), encoding="utf-8")
     path = case_dir / "design.json"
     record = rec_io.upgrade(rec_io.load(path))
     record.setdefault("manufacturing_plans", []).append(

@@ -26,13 +26,14 @@ import sys
 from pathlib import Path
 
 from . import record as rec
-from .runtime import pebp_command, work_dir
+from .runtime import child_env, pebp_command, work_dir
 
 GROUP_CLEFT = {"C": "hard-soft", "N": "none"}
 
 
 def _run(args: list[str], cwd: Path) -> subprocess.CompletedProcess:
-    return subprocess.run([*pebp_command(), *args], cwd=cwd, capture_output=True, text=True)
+    return subprocess.run([*pebp_command(), *args], cwd=cwd, capture_output=True, text=True, encoding="utf-8", errors="replace",
+                       env=child_env())
 
 
 def make(case_dir: Path, cat: dict, version_id: str, log=print) -> dict:
@@ -87,7 +88,7 @@ def make(case_dir: Path, cat: dict, version_id: str, log=print) -> dict:
     step(f"stock final baton {kn}: mold and wire jig", all(b["ok"] for b in st["batons"]))
     # 4. one-piece fallback
     mdir = mold_build(out, MoldParams(final_plate_thickness=cp.final_thickness, device=kn))
-    mman = json.loads((mdir / "mold_manifest.json").read_text())
+    mman = json.loads((mdir / "mold_manifest.json").read_text(encoding="utf-8"))
     mv = mman["validation"]
     step(f"one-piece cast plate with {kn}: four-piece mold", mv.get("ok", False), f"final QC {mv['final_qc']['overall']}")
 
@@ -113,8 +114,8 @@ def make(case_dir: Path, cat: dict, version_id: str, log=print) -> dict:
             "flag": "project heuristic: nothing printed, cast or bench-tested; try-in under endoscopic supervision only. "
                     "The two-visit joint is unproven until the bench tests in docs/CHAIRSIDE_BENCH.md pass; one-piece casting "
                     "stays the fallback.", "time": rec.now()}
-    (out / "make.json").write_text(json.dumps(plan, indent=1, default=str))
-    (out / "PLAN.md").write_text(_plan_md(plan))
+    (out / "make.json").write_text(json.dumps(plan, indent=1, default=str), encoding="utf-8")
+    (out / "PLAN.md").write_text(_plan_md(plan), encoding="utf-8")
     record.setdefault("catalog_makes", {})[version_id] = {"dir": f"catalog/make/{version_id}", "ok": plan["ok"], "time": plan["time"]}
     rec.save(record, case_dir / "design.json")
     return plan

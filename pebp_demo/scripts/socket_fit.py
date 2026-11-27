@@ -89,7 +89,7 @@ def main():
             c0 = sum(r["drop_mm"] == 0 for r in sel); c5 = sum(r["drop_mm"] <= 0.5 for r in sel); c1 = sum(r["drop_mm"] <= 1.0 for r in sel)
             print(f"{w:>4.1f} x {L:>3.1f} ({sel[0]['plug_height']:.1f}){'':<13}{sel[0]['strength_ratio']:>9.2f}{c0:>6}{c5:>7}{c1:>7}")
     if a.out:
-        Path(a.out).write_text(json.dumps(rows, indent=1))
+        Path(a.out).write_text(json.dumps(rows, indent=1), encoding="utf-8")
         print("per-case values:", a.out)
 
 
